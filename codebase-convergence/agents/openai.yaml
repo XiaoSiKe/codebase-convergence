@@ -1,0 +1,4 @@
+interface:
+  display_name: "代码整理修复大师"
+  short_description: "收敛代码、架构、测试与文档矛盾，安全修复并完整验证"
+  default_prompt: "使用 $codebase-convergence 审查并收敛当前项目中的代码、架构、测试与文档矛盾，只实施有证据的安全修复，并汇总需要我决定的事项。"
