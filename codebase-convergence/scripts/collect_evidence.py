@@ -30,6 +30,8 @@ INSTRUCTION_NAMES = {"AGENTS.md", "CLAUDE.md"}
 CONFIG_NAMES = {
     "Makefile",
     "package.json",
+    "openai.yaml",
+    "openai.yml",
     "pyproject.toml",
     "requirements.txt",
     "setup.cfg",
@@ -116,6 +118,15 @@ def looks_like_test(path: Path) -> bool:
         or name.startswith("test_")
         or ".test." in name
         or ".spec." in name
+    )
+
+
+def looks_like_schema(path: Path) -> bool:
+    name = path.name.lower()
+    return (
+        has_part(path, "schema", "schemas")
+        or name in {"schema.json", "schema.yaml", "schema.yml"}
+        or name.endswith((".schema.json", ".schema.yaml", ".schema.yml"))
     )
 
 
@@ -258,7 +269,7 @@ def collect_evidence(root: Path) -> dict[str, Any]:
             if path.name in CONFIG_NAMES or has_part(path.relative_to(root), "config", "configs")
         ),
         "schema_files": sorted(
-            value for path, value in rel.items() if has_part(path.relative_to(root), "schema", "schemas")
+            value for path, value in rel.items() if looks_like_schema(path.relative_to(root))
         ),
         "migration_files": sorted(
             value for path, value in rel.items() if has_part(path.relative_to(root), "migration", "migrations")

@@ -62,6 +62,7 @@ class CollectEvidenceTests(unittest.TestCase):
             root = Path(temp_dir)
             files = {
                 "AGENTS.md": "docs/generated.md is generated; do not edit it manually.\n",
+                "agents/openai.yaml": "interface:\n  display_name: Example\n",
                 "CONTEXT.md": "# Domain\n",
                 "docs/adr/0001-example.md": "# Accepted decision\n",
                 "docs/generated.md": "<!-- generated; do not edit -->\n",
@@ -69,6 +70,7 @@ class CollectEvidenceTests(unittest.TestCase):
                 "package.json": json.dumps({"scripts": {"test": "python3 -m unittest"}}),
                 "Makefile": "lint:\n\tpython3 -m compileall src\n",
                 "schema/api.json": "{}\n",
+                "references/finding.schema.json": "{}\n",
                 "migrations/001.sql": "select 1;\n",
                 "src/app.py": "VALUE = 1\n",
                 "scripts/generate.py": "TARGET = '<!-- generated; do not edit -->'\n",
@@ -91,6 +93,8 @@ class CollectEvidenceTests(unittest.TestCase):
             self.assertNotIn("AGENTS.md", evidence["inventory"]["generated_files"])
             self.assertNotIn("scripts/generate.py", evidence["inventory"]["generated_files"])
             self.assertIn("schema/api.json", evidence["inventory"]["schema_files"])
+            self.assertIn("references/finding.schema.json", evidence["inventory"]["schema_files"])
+            self.assertIn("agents/openai.yaml", evidence["inventory"]["config_files"])
             self.assertIn("migrations/001.sql", evidence["inventory"]["migration_files"])
             self.assertIn("tests/test_app.py", evidence["inventory"]["test_files"])
             self.assertIn("npm run test", evidence["available_commands"])

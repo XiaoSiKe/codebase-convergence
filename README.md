@@ -71,7 +71,7 @@ Finding 合同是结构和新鲜度闸门，不机器判定业务正确性、规
 python3 scripts/eval_cases.py materialize --case numeric-conflict --output /明确的/空目录
 ```
 
-检查或预览本地安装时必须提供完整目标目录。`--check` 和 `--dry-run` 不写文件；`--install` 只接受空目标或由本工具管理且没有本地修改的目标：
+检查或预览本地安装时必须提供完整目标目录。`--check` 和 `--dry-run` 不写文件；`--install` 只接受空目标或由本工具管理且没有本地修改的目标。受管文件或安装清单被符号链接替换时会拒绝覆盖：
 
 ```bash
 python3 scripts/install_local.py --check --target /明确的/codebase-convergence

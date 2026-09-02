@@ -128,8 +128,9 @@ def validate_finding(finding: dict[str, Any]) -> list[str]:
         errors.append(f"missing required fields: {sorted(missing)}")
     unexpected_keys(finding, TOP_LEVEL_KEYS, "finding", errors)
 
-    if finding.get("schema_version") != 1:
-        errors.append("schema_version must be 1")
+    schema_version = finding.get("schema_version")
+    if isinstance(schema_version, bool) or not isinstance(schema_version, int) or schema_version != 1:
+        errors.append("schema_version must be the integer 1")
     finding_id = finding.get("id")
     if not isinstance(finding_id, str) or not ID_PATTERN.fullmatch(finding_id):
         errors.append("id must match F-<stable-identifier>")
@@ -152,9 +153,12 @@ def validate_finding(finding: dict[str, Any]) -> list[str]:
                 errors.append(f"{label} must be an object")
                 continue
             unexpected_keys(item, EVIDENCE_KEYS, label, errors)
-            enum_value(item.get("kind"), EVIDENCE_KINDS, f"{label}.kind", errors)
+            kind = item.get("kind")
+            enum_value(kind, EVIDENCE_KINDS, f"{label}.kind", errors)
             non_empty_string(item.get("summary"), f"{label}.summary", errors)
             raw_path = item.get("path")
+            if kind == "file" and raw_path is None:
+                errors.append(f"{label} file evidence requires path")
             if raw_path is not None:
                 try:
                     evidence_paths.add(normalized_relative_path(raw_path))

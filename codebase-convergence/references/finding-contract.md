@@ -22,6 +22,8 @@ Exit code `0` means the stamped record is current, `1` means a check found stale
 
 Provide every final Finding field except `freshness`. Under `evidence_basis.files`, provide only each relevant repository-relative `path` and its `role`; `stamp` owns `method`, `state`, and `sha256`.
 
+Every `file` evidence item must name its repository-relative `path`. Use `test`, `command`, or `reproduction` for decisive evidence that has no single file location.
+
 ```json
 {
   "schema_version": 1,

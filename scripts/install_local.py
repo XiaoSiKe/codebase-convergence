@@ -47,6 +47,8 @@ def validate_target(raw_target: Path) -> Path:
 
 def load_manifest(target: Path) -> dict[str, Any] | None:
     path = target / MANIFEST_NAME
+    if path.is_symlink():
+        raise ValueError(f"install manifest must not be a symlink: {path}")
     if not path.is_file():
         return None
     data = json.loads(path.read_text(encoding="utf-8"))
@@ -59,7 +61,12 @@ def safe_target_path(target: Path, relative: str) -> Path:
     path = PurePosixPath(relative)
     if path.is_absolute() or ".." in path.parts or not path.parts:
         raise ValueError(f"unsafe manifest path: {relative}")
-    resolved = target.joinpath(*path.parts).resolve()
+    candidate = target
+    for part in path.parts:
+        candidate /= part
+        if candidate.is_symlink():
+            raise ValueError(f"managed path must not contain a symlink: {relative}")
+    resolved = candidate.resolve()
     if not resolved.is_relative_to(target):
         raise ValueError(f"manifest path escapes target: {relative}")
     return resolved
