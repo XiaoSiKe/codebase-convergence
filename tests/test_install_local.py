@@ -88,6 +88,22 @@ class InstallLocalTests(unittest.TestCase):
             self.assertTrue(manifest.is_symlink())
             self.assertIn("manifest must not be a symlink", result.stdout)
 
+    def test_check_refuses_a_symlinked_target_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            real_target = root / "real" / "codebase-convergence"
+            alias_target = root / "alias" / "codebase-convergence"
+            real_target.parent.mkdir()
+            alias_target.parent.mkdir()
+            self.assertEqual(0, run_cli("--install", "--target", str(real_target)).returncode)
+            alias_target.symlink_to(real_target, target_is_directory=True)
+
+            result = run_cli("--check", "--target", str(alias_target))
+
+            self.assertEqual(2, result.returncode)
+            self.assertIn("target directory must not be a symlink", result.stdout)
+            self.assertTrue(alias_target.is_symlink())
+
     def test_install_refuses_an_unmanaged_existing_target(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             target = Path(temp_dir) / "codebase-convergence"

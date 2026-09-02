@@ -69,9 +69,12 @@ Finding 合同是结构和新鲜度闸门，不机器判定业务正确性、规
 
 ```bash
 python3 scripts/eval_cases.py materialize --case numeric-conflict --output /明确的/空目录
+python3 scripts/eval_cases.py validate-result --case numeric-conflict --result /tmp/result.json --workspace /明确的/空目录
 ```
 
-检查或预览本地安装时必须提供完整目标目录。`--check` 和 `--dry-run` 不写文件；`--install` 只接受空目标或由本工具管理且没有本地修改的目标。受管文件或安装清单被符号链接替换时会拒绝覆盖：
+`validate-result` 会把结果中的 `changed_files` 与物化工作区相对初始夹具的真实净变化对账；未上报、虚报、越界或缺少的改动都会使评测失败。`.git` 和常见测试缓存不计入夹具改动，案例预置的未提交文件则以物化完成时的内容为基线。
+
+检查或预览本地安装时必须提供完整目标目录。`--check` 和 `--dry-run` 不写文件；`--install` 只接受空目标或由本工具管理且没有本地修改的目标。目标目录本身、受管文件或安装清单是符号链接时都会拒绝继续：
 
 ```bash
 python3 scripts/install_local.py --check --target /明确的/codebase-convergence

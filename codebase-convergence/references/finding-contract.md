@@ -65,6 +65,8 @@ If a whole-worktree fingerprint is available from `collect_evidence.py`, the dra
 - The Python validator owns cross-field policy, safe path handling, line checks, file observation, and freshness computation.
 - The Skill workflow—not the schema or validator—owns semantic admission, canonical-owner judgment, remedy assessment, architecture judgment, and user authorization.
 
+A `confirmed` canonical owner must name a present file carrying the `canonical-owner` role in `evidence_basis.files`. An absent expected path can still be fingerprinted for a completeness Finding, but it cannot become a confirmed owner until that source exists; use `unknown` or `disputed` with a reason instead.
+
 `eligible_for_remedy_review: true` means only that a `direct-repair` Finding is structurally valid and its declared evidence is current. It does not prove the claim, approve the remedy, or grant permission to edit.
 
 ## Limits

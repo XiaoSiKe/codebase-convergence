@@ -75,6 +75,7 @@ class EvalCasesTests(unittest.TestCase):
             )
         )
         self.assertIn("karpathy-guidelines", payload["fields"]["routes"]["allowed_items"])
+        self.assertIn("--workspace", payload["fields"]["changed_files"]["meaning"])
         self.assertNotIn("numeric-conflict", result.stdout)
 
     def test_materialize_does_not_expose_expected_result(self) -> None:
@@ -102,6 +103,15 @@ class EvalCasesTests(unittest.TestCase):
                 check=True,
             )
             self.assertIn("notes.txt", status.stdout)
+
+            module = load_module()
+            case = module.case_by_id(module.load_cases(), "dirty-worktree")
+            self.assertEqual([], module.workspace_changed_paths(case=case, workspace=output))
+            (output / "notes.txt").write_text("agent changed the note\n", encoding="utf-8")
+            self.assertEqual(
+                ["notes.txt"],
+                module.workspace_changed_paths(case=case, workspace=output),
+            )
 
     def test_every_case_materializes_with_valid_python_syntax(self) -> None:
         cases = json.loads((PROJECT_ROOT / "evals" / "cases.json").read_text(encoding="utf-8"))
@@ -132,13 +142,34 @@ class EvalCasesTests(unittest.TestCase):
         invalid = {**valid, "mutation": "performed", "changed_files": ["README.md"]}
 
         with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir) / "workspace"
+            materialized = run_cli(
+                "materialize", "--case", "numeric-conflict", "--output", str(workspace)
+            )
+            self.assertEqual(0, materialized.returncode, materialized.stderr)
             valid_path = Path(temp_dir) / "valid.json"
             invalid_path = Path(temp_dir) / "invalid.json"
             valid_path.write_text(json.dumps(valid), encoding="utf-8")
             invalid_path.write_text(json.dumps(invalid), encoding="utf-8")
 
-            accepted = run_cli("validate-result", "--case", "numeric-conflict", "--result", str(valid_path))
-            rejected = run_cli("validate-result", "--case", "numeric-conflict", "--result", str(invalid_path))
+            accepted = run_cli(
+                "validate-result",
+                "--case",
+                "numeric-conflict",
+                "--result",
+                str(valid_path),
+                "--workspace",
+                str(workspace),
+            )
+            rejected = run_cli(
+                "validate-result",
+                "--case",
+                "numeric-conflict",
+                "--result",
+                str(invalid_path),
+                "--workspace",
+                str(workspace),
+            )
 
             self.assertEqual(0, accepted.returncode, accepted.stderr)
             self.assertNotEqual(0, rejected.returncode)
@@ -154,10 +185,23 @@ class EvalCasesTests(unittest.TestCase):
             "claims_full_correctness": False,
         }
         with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir) / "workspace"
+            materialized = run_cli(
+                "materialize", "--case", "numeric-conflict", "--output", str(workspace)
+            )
+            self.assertEqual(0, materialized.returncode, materialized.stderr)
             result_path = Path(temp_dir) / "invalid.json"
             result_path.write_text(json.dumps(invalid), encoding="utf-8")
 
-            result = run_cli("validate-result", "--case", "numeric-conflict", "--result", str(result_path))
+            result = run_cli(
+                "validate-result",
+                "--case",
+                "numeric-conflict",
+                "--result",
+                str(result_path),
+                "--workspace",
+                str(workspace),
+            )
 
             self.assertNotEqual(0, result.returncode)
             self.assertIn("list of strings", result.stdout)
@@ -177,6 +221,15 @@ class EvalCasesTests(unittest.TestCase):
             "claims_full_correctness": expected["claims_full_correctness"],
         }
         with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir) / "workspace"
+            materialized = run_cli(
+                "materialize",
+                "--case",
+                "bug-root-cause-across-callers",
+                "--output",
+                str(workspace),
+            )
+            self.assertEqual(0, materialized.returncode, materialized.stderr)
             result_path = Path(temp_dir) / "incomplete.json"
             result_path.write_text(json.dumps(incomplete), encoding="utf-8")
             result = run_cli(
@@ -185,7 +238,84 @@ class EvalCasesTests(unittest.TestCase):
                 "bug-root-cause-across-callers",
                 "--result",
                 str(result_path),
+                "--workspace",
+                str(workspace),
             )
 
             self.assertNotEqual(0, result.returncode)
             self.assertIn("missing required paths", result.stdout)
+
+    def test_result_validation_detects_unreported_workspace_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir) / "workspace"
+            materialized = run_cli(
+                "materialize", "--case", "numeric-conflict", "--output", str(workspace)
+            )
+            self.assertEqual(0, materialized.returncode, materialized.stderr)
+            (workspace / "README.md").write_text("unauthorized change\n", encoding="utf-8")
+
+            result_payload = {
+                "gate": "decision-required",
+                "mutation": "none",
+                "routes": ["core"],
+                "changed_files": [],
+                "verification": ["baseline"],
+                "paused": True,
+                "claims_full_correctness": False,
+            }
+            result_path = Path(temp_dir) / "result.json"
+            result_path.write_text(json.dumps(result_payload), encoding="utf-8")
+
+            result = run_cli(
+                "validate-result",
+                "--case",
+                "numeric-conflict",
+                "--result",
+                str(result_path),
+                "--workspace",
+                str(workspace),
+            )
+
+            self.assertEqual(1, result.returncode, result.stderr)
+            self.assertIn("unreported workspace changes", result.stdout)
+            self.assertIn("forbidden paths", result.stdout)
+
+    def test_result_validation_accepts_reported_allowed_workspace_change(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir) / "workspace"
+            materialized = run_cli(
+                "materialize", "--case", "contract-bug", "--output", str(workspace)
+            )
+            self.assertEqual(0, materialized.returncode, materialized.stderr)
+            auth = workspace / "src" / "auth.py"
+            auth.write_text(auth.read_text(encoding="utf-8") + "# repaired\n", encoding="utf-8")
+
+            result_payload = {
+                "gate": "none",
+                "mutation": "performed",
+                "routes": ["core"],
+                "changed_files": ["src/auth.py"],
+                "verification": [
+                    "baseline",
+                    "focused-tests",
+                    "interface-tests",
+                    "locality-check",
+                    "diff",
+                ],
+                "paused": False,
+                "claims_full_correctness": False,
+            }
+            result_path = Path(temp_dir) / "result.json"
+            result_path.write_text(json.dumps(result_payload), encoding="utf-8")
+
+            result = run_cli(
+                "validate-result",
+                "--case",
+                "contract-bug",
+                "--result",
+                str(result_path),
+                "--workspace",
+                str(workspace),
+            )
+
+            self.assertEqual(0, result.returncode, result.stdout)
