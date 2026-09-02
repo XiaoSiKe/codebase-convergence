@@ -4,7 +4,7 @@ Use this workflow for every convergence task. Scale the depth to the repository 
 
 ## 1. Establish a trustworthy baseline
 
-1. Inspect repository instructions and worktree state. Record unrelated changes without staging, reverting, or formatting them.
+1. Inspect repository instructions and worktree state. Record unrelated changes without staging, reverting, or formatting them. When the bundled collector is available, retain its Git head and worktree fingerprint as the evidence basis for this pass.
 2. Identify the requested paths, entry points, state and data ownership, tests, configuration, schemas, migrations, UI flows, and Markdown documents. When the user asks for the whole project, inventory the repository breadth-first before tracing high-risk paths deeply.
 3. Read the domain glossary and accepted ADRs before implementation. If neither exists, infer vocabulary cautiously from authoritative code and documents and label the inference.
 4. Identify generated files and their source chain from headers, build scripts, schemas, code generators, or repository instructions. If the canonical source is wrong, edit it before rerunning the existing generator. If the source is already correct and only the artifact is stale, rerun the generator without a no-op source edit. Do not patch a generated artifact as if it were canonical.
@@ -23,10 +23,16 @@ Give each finding a stable ID. Record:
 - severity and user impact;
 - confidence: confirmed, probable, or uncertain;
 - evidence: file and line, command output, failing test, or reproducible path;
+- evidence basis: the worktree fingerprint when available, relevant paths, and decisive sources;
+- freshness: current, stale, or unknown;
 - canonical owner: where the fact or behavior should live;
 - disposition: direct repair, decision required, architecture candidate, or observation.
 
-A smell without impact or evidence is an observation, not a repair mandate. Findings from specialists must be translated into this same ledger rather than emitted as a second report.
+Scanner, reviewer, and specialist output starts as a candidate. Before admission, confirm that cited files, symbols, or contracts exist; read the complete logical block and necessary callers; and verify that the claimed impact is reachable. Verify a shared premise once before adjudicating candidates that depend on it. If the premise fails, reject the dependent candidates together.
+
+A smell without impact or evidence is an observation, not a repair mandate. Similar syntax, file size, broad types, catch-all handling, fallbacks, and repeated lines are investigation signals only. A valid finding does not validate its proposed remedy; evaluate the remedy's necessity, scope, and contract effects separately. Findings from specialists must pass the same admission check and be translated into this ledger rather than emitted as a second report.
+
+Only current findings may authorize repair. Re-ground unknown external findings against the current repository. Mark a finding stale when its relevant path, canonical owner, generated source, public contract, or decisive test changes; stale is not false positive. Merge findings only when their root claim, canonical owner, impact, and evidence basis are compatible. The same file or similar title is insufficient, and a resolved issue seen on a different basis remains a possible regression until rechecked.
 
 ## 3. Resolve contradictions without guessing
 
@@ -57,10 +63,11 @@ Material items include numbers and their representation, business rules, state t
 For each contract-preserving direct repair:
 
 1. reproduce or otherwise prove the defect when practical;
-2. choose the smallest change that restores the intended invariant;
-3. test behavior through the Interface callers use;
-4. update the canonical owner once and link dependants to it;
-5. remove only imports, code, tests, or prose made obsolete by this change.
+2. re-read the target and confirm the finding is current; if an old snippet, line, or call path no longer matches, re-derive the repair or drop it instead of forcing the stale proposal;
+3. choose the smallest change that restores the intended invariant;
+4. test behavior through the Interface callers use;
+5. update the canonical owner once and link dependants to it;
+6. remove only imports, code, tests, or prose made obsolete by this change.
 
 Avoid drive-by cleanup. If a simpler repair has the same verified outcome, use it. If the real defect cannot be isolated, return to evidence gathering rather than adding speculative fallback logic.
 
@@ -76,6 +83,8 @@ Run the existing checks relevant to changed surfaces. Repeat the same baseline c
 - Markdown links, headings, code fences, examples, and references to canonical facts.
 
 Inspect the final diff for scope, accidental behavior or value changes, duplicated sources of truth, generated artifacts, and unrelated formatting. Distinguish introduced failures from pre-existing failures.
+
+Any repair that changes a finding's evidence basis invalidates that finding and dependent verification. Before finalizing, re-adjudicate every affected finding against the combined final state and report unresolved stale or unknown items as needing re-research, not as fixed.
 
 ## 7. Hand off with calibrated certainty
 

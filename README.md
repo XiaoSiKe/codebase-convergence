@@ -39,6 +39,8 @@ python3 scripts/eval_cases.py result-contract
 python3 codebase-convergence/scripts/collect_evidence.py --root /明确的/仓库路径 --pretty
 ```
 
+采集器输出 schema v2。除原有清单外，`git` 对象还包含 `head`、`branch`、`dirty`、`worktree_fingerprint` 和 `fingerprint_method`。指纹由当前提交、已跟踪文件差异与未被忽略的未跟踪文件内容生成，用于标识 Finding 的证据基线；它不是不可变快照，也不证明仓库正确。被忽略的文件、跳过的符号链接、子模块内部状态、采集根目录外的生成物和外部运行时状态不在其覆盖范围内。
+
 物化一个不含期望答案的临时评测仓库：
 
 ```bash

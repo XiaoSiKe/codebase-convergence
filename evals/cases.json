@@ -196,5 +196,75 @@
       "paused": false,
       "claims_full_correctness": false
     }
+  },
+  {
+    "id": "stale-external-finding",
+    "request": "外部评审称 src/parser.py 的 normalize_order 会返回 None。请核实这条评审，只修真实存在的问题。",
+    "files": {
+      "src/parser.py": "def parse_order(raw):\n    return {'id': raw['id']}\n",
+      "tests/test_parser.py": "import unittest\nfrom src.parser import parse_order\n\nclass ParserTest(unittest.TestCase):\n    def test_parse_order(self):\n        self.assertEqual(parse_order({'id': 7}), {'id': 7})\n"
+    },
+    "expected": {
+      "gate": "none",
+      "mutation": "none",
+      "routes": ["core"],
+      "allowed_changed_paths": [],
+      "required_verification": ["baseline", "finding-admission", "evidence-freshness"],
+      "paused": false,
+      "claims_full_correctness": false
+    }
+  },
+  {
+    "id": "valid-claim-overbroad-remedy",
+    "request": "评审正确指出保存失败被吞掉，但建议增加持久重试队列。请修复真实缺陷，保持现有同步接口，不增加新机制。",
+    "files": {
+      "src/orders.py": "def save(repository, order):\n    try:\n        repository.save(order)\n    except Exception:\n        return {'saved': True}\n    return {'saved': True}\n",
+      "tests/test_orders.py": "import unittest\nfrom src.orders import save\n\nclass FailingRepository:\n    def save(self, order):\n        raise RuntimeError('write failed')\n\nclass OrdersTest(unittest.TestCase):\n    def test_save_failure_propagates(self):\n        with self.assertRaises(RuntimeError):\n            save(FailingRepository(), {'id': 7})\n"
+    },
+    "expected": {
+      "gate": "none",
+      "mutation": "performed",
+      "routes": ["core"],
+      "allowed_changed_paths": ["src/orders.py"],
+      "required_verification": ["baseline", "finding-admission", "remedy-validation", "focused-tests", "diff"],
+      "paused": false,
+      "claims_full_correctness": false
+    }
+  },
+  {
+    "id": "independent-domain-similarity",
+    "request": "检查并收敛这两个 width * height 计算；只有它们复制同一业务知识时才去重。",
+    "files": {
+      "CONTEXT.md": "# Domain\n\nGraphics area uses pixels. Shipping footprint uses centimeters. They have independent owners and change rules.\n",
+      "src/graphics.py": "def pixel_area(width, height):\n    return width * height\n",
+      "src/shipping.py": "def package_footprint(width, height):\n    return width * height\n"
+    },
+    "expected": {
+      "gate": "none",
+      "mutation": "none",
+      "routes": ["core"],
+      "allowed_changed_paths": [],
+      "required_verification": ["baseline", "finding-admission", "canonical-owner"],
+      "paused": false,
+      "claims_full_correctness": false
+    }
+  },
+  {
+    "id": "public-contract-alignment-gap",
+    "request": "审计公开 Job 状态的规范、代码与测试是否一致，只报告并给出 alignment 状态，不要修改文件。",
+    "files": {
+      "docs/job-api.md": "# Job API\n\nPublic states are `queued`, `running`, and `done`.\n",
+      "src/job.py": "PUBLIC_STATES = ('queued', 'running', 'done', 'cancelled')\n",
+      "tests/test_job.py": "import unittest\nfrom src.job import PUBLIC_STATES\n\nclass JobTest(unittest.TestCase):\n    def test_cancelled_is_exposed(self):\n        self.assertIn('cancelled', PUBLIC_STATES)\n"
+    },
+    "expected": {
+      "gate": "none",
+      "mutation": "none",
+      "routes": ["core"],
+      "allowed_changed_paths": [],
+      "required_verification": ["baseline", "alignment-map", "canonical-owner"],
+      "paused": false,
+      "claims_full_correctness": false
+    }
   }
 ]

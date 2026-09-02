@@ -1,6 +1,6 @@
 # Specialist routing
 
-The Skill is the coordinator and evidence ledger owner. Use a specialist only when it can materially improve an in-scope finding and the specialist is available in the current environment.
+When invoked directly, this Skill coordinates the convergence task and owns its evidence ledger. Under an outer task governor, it owns only the repository-convergence finding ledger; the outer governor retains the user channel, task-level authorization, and final delivery. Use a specialist only when it can materially improve an in-scope finding and is available in the current environment.
 
 ## Routing table
 
@@ -21,6 +21,7 @@ Use a language-, framework-, security-, database-, document-, or deployment-spec
 1. Load the minimum specialist set; do not fan out by technology name alone.
 2. Give the specialist a bounded finding or exploration question, relevant repository instructions, and the raw evidence needed. Do not prime it with a desired conclusion.
 3. Keep specialists read-only unless the user authorized repair and file ownership is unambiguous.
-4. Translate useful results into the main evidence ledger with stable finding IDs. Do not return multiple disconnected reports.
-5. A specialist recommendation cannot bypass the decision packet, locked content, repository instructions, or authorization limits.
-6. If a specialist is unavailable, continue with the core workflow when safe and disclose the reduced verification surface.
+4. Treat specialist results as candidates. Admit them only after grounding their locations, claims, impact, and evidence basis in the current worktree; otherwise route them to re-research.
+5. Translate admitted results into the repository-convergence ledger with stable finding IDs. Do not return multiple disconnected reports.
+6. A specialist recommendation cannot bypass the decision packet, locked content, repository instructions, or authorization limits.
+7. If a specialist is unavailable, continue with the core workflow when safe and disclose the reduced verification surface.

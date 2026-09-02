@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 import re
 import subprocess
 from itertools import islice
@@ -62,6 +64,7 @@ GENERATED_MARKERS = (
     "generated file",
     "generated;",
 )
+FINGERPRINT_METHOD = "git-head+binary-diff+untracked-content-v1"
 COMMENT_PREFIXES = {
     ".css": ("/*",),
     ".go": ("//", "/*"),
@@ -154,26 +157,80 @@ def explicit_commands(root: Path) -> list[str]:
     return sorted(commands)
 
 
-def git_evidence(root: Path) -> dict[str, Any]:
-    probe = subprocess.run(
-        ["git", "-C", str(root), "rev-parse", "--show-toplevel"],
-        text=True,
+def git_command(root: Path, *args: str, text: bool = False) -> subprocess.CompletedProcess[Any]:
+    return subprocess.run(
+        ["git", "-C", str(root), *args],
+        text=text,
         capture_output=True,
         check=False,
     )
-    if probe.returncode != 0:
-        return {"is_repository": False, "root": None, "status": []}
 
-    status = subprocess.run(
-        ["git", "-C", str(root), "status", "--short", "--branch"],
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+
+def worktree_fingerprint(root: Path, head: str | None) -> str | None:
+    digest = hashlib.sha256()
+    digest.update(b"codebase-convergence-worktree-v1\0")
+    digest.update((head or "UNBORN").encode("ascii"))
+
+    if head:
+        diff = git_command(root, "diff", "--no-color", "--binary", "--no-ext-diff", "--no-textconv", head, "--")
+        listed = git_command(root, "ls-files", "--others", "--exclude-standard", "-z")
+        if diff.returncode != 0 or listed.returncode != 0:
+            return None
+        digest.update(b"\0tracked-diff\0")
+        digest.update(diff.stdout)
+        path_kind = b"untracked"
+    else:
+        listed = git_command(root, "ls-files", "--cached", "--others", "--exclude-standard", "-z")
+        if listed.returncode != 0:
+            return None
+        path_kind = b"unborn-file"
+
+    for raw_path in sorted(filter(None, listed.stdout.split(b"\0"))):
+        path = root / os.fsdecode(raw_path)
+        if path.is_symlink():
+            continue
+        try:
+            content_digest = hashlib.sha256(path.read_bytes()).digest()
+        except OSError:
+            return None
+        digest.update(b"\0" + path_kind + b"\0")
+        digest.update(raw_path)
+        digest.update(b"\0")
+        digest.update(content_digest)
+
+    return f"sha256:{digest.hexdigest()}"
+
+
+def git_evidence(root: Path) -> dict[str, Any]:
+    probe = git_command(root, "rev-parse", "--show-toplevel", text=True)
+    if probe.returncode != 0:
+        return {
+            "is_repository": False,
+            "root": None,
+            "status": [],
+            "head": None,
+            "branch": None,
+            "dirty": False,
+            "worktree_fingerprint": None,
+            "fingerprint_method": None,
+        }
+
+    status = git_command(root, "status", "--short", "--branch", text=True)
+    status_lines = status.stdout.splitlines() if status.returncode == 0 else []
+    head_result = git_command(root, "rev-parse", "--verify", "HEAD", text=True)
+    branch_result = git_command(root, "symbolic-ref", "--short", "-q", "HEAD", text=True)
+    head = head_result.stdout.strip() if head_result.returncode == 0 else None
+    branch = branch_result.stdout.strip() if branch_result.returncode == 0 else None
+    fingerprint = worktree_fingerprint(root, head)
     return {
         "is_repository": True,
         "root": probe.stdout.strip(),
-        "status": status.stdout.splitlines() if status.returncode == 0 else [],
+        "status": status_lines,
+        "head": head,
+        "branch": branch,
+        "dirty": any(line.strip() and not line.startswith("##") for line in status_lines),
+        "worktree_fingerprint": fingerprint,
+        "fingerprint_method": FINGERPRINT_METHOD if fingerprint else None,
     }
 
 
@@ -210,7 +267,7 @@ def collect_evidence(root: Path) -> dict[str, Any]:
     }
 
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "root": str(root),
         "git": git_evidence(root),
         "coverage": {
@@ -222,6 +279,8 @@ def collect_evidence(root: Path) -> dict[str, Any]:
         "limitations": [
             "Inventory is evidence, not a decision about canonical ownership or correctness.",
             "Generated-file detection uses header markers and may miss unmarked artifacts.",
+            "The worktree fingerprint identifies Git-visible content; it is not an immutable snapshot or correctness proof.",
+            "The fingerprint excludes ignored files, skipped symlinks, submodule internals, artifacts outside the collected root, and external runtime state.",
         ],
     }
 

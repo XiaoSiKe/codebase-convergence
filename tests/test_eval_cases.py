@@ -23,11 +23,11 @@ def run_cli(*args: str) -> subprocess.CompletedProcess[str]:
 
 
 class EvalCasesTests(unittest.TestCase):
-    def test_case_catalog_is_valid_and_has_ten_unique_cases(self) -> None:
+    def test_case_catalog_is_valid_and_has_fourteen_unique_cases(self) -> None:
         result = run_cli("validate-cases")
         self.assertEqual(0, result.returncode, result.stderr)
         payload = json.loads(result.stdout)
-        self.assertEqual(10, payload["case_count"])
+        self.assertEqual(14, payload["case_count"])
 
     def test_result_contract_exposes_types_without_case_answers(self) -> None:
         result = run_cli("result-contract")
@@ -35,6 +35,11 @@ class EvalCasesTests(unittest.TestCase):
         payload = json.loads(result.stdout)
         self.assertEqual(["none", "decision-required", "architecture-exploration"], payload["fields"]["gate"]["allowed"])
         self.assertEqual(["none", "performed"], payload["fields"]["mutation"]["allowed"])
+        self.assertTrue(
+            {"finding-admission", "evidence-freshness", "remedy-validation", "alignment-map"}.issubset(
+                payload["fields"]["verification"]["allowed_items"]
+            )
+        )
         self.assertNotIn("numeric-conflict", result.stdout)
 
     def test_materialize_does_not_expose_expected_result(self) -> None:

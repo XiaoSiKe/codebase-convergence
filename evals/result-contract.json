@@ -22,7 +22,7 @@
     },
     "verification": {
       "type": "array[string]",
-      "allowed_items": ["baseline", "worktree", "focused-tests", "broader-tests", "static-analysis", "build", "diff", "generator", "idempotence", "markdown", "locked-content", "canonical-owner", "architecture-report", "ui", "reproduction-attempt", "verification-gap", "coverage-manifest", "residual-risk"],
+      "allowed_items": ["baseline", "worktree", "focused-tests", "broader-tests", "static-analysis", "build", "diff", "generator", "idempotence", "markdown", "locked-content", "canonical-owner", "architecture-report", "ui", "reproduction-attempt", "verification-gap", "coverage-manifest", "residual-risk", "finding-admission", "evidence-freshness", "remedy-validation", "alignment-map"],
       "meaning": "Stable tags for checks actually performed; detailed command output may be returned in an additional evidence field."
     },
     "paused": {

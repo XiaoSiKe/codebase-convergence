@@ -23,6 +23,17 @@ Apply the deletion test: imagine deleting the suspected Module. If complexity di
 
 Treat package manifests, exports, documented imports, external call sites, and accepted compatibility records as evidence of a public Interface. When that evidence is absent, distinguish “one caller inside this repository” from “no external callers”; do not claim the latter without proof.
 
+## Admit quality candidates narrowly
+
+Use these lenses only to explain evidence already in scope; they are not a mandatory whole-repository scan:
+
+- Contract strength: show a reachable illegal state, a declaration that conflicts with runtime behavior, or a real boundary-validation gap.
+- Responsibility: identify at least two independent change reasons and the resulting test, ownership, deployment, or coordination cost. Size alone is not evidence.
+- Failure integrity: trace what the caller or operator observes and show false success, hidden failure, corrupted state, unbounded recovery, or material loss of diagnostic context.
+- Knowledge duplication: prove that copies encode the same rule, mapping, schema, invariant, or policy and are expected to change together. Similar syntax across independent domains is not duplication.
+
+Do not recommend a stronger contract, split, error mechanism, or shared abstraction unless it reduces the demonstrated cost without adding greater indirection or fragility.
+
 ## Separate candidates from repairs
 
 A candidate that changes an Interface, Seam, ownership, business behavior, or public contract is not a direct repair. Present it before implementation unless the user already authorized that exact refactor.

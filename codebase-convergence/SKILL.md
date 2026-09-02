@@ -12,8 +12,10 @@ Make a repository internally consistent and easier to change. Judge four qualiti
 - Read repository instructions, the domain glossary, relevant ADRs, and authoritative specifications before judging implementation.
 - Preserve unrelated worktree changes. Touch only files that trace to the request and remove only orphans created by this work.
 - Treat user-designated text, titles, data definitions, and other protected content as locked and preserve it verbatim.
+- Treat scanner, reviewer, and specialist output as candidates until their locations, claims, and impact are grounded in the current repository state.
 - Do not silently change a number, business rule, state transition, public interface, interaction behavior, visual contract, or canonical owner. Put unresolved choices in one decision packet.
 - Prefer the smallest contract-preserving repair: restore the behavior already established by the Interface and authoritative evidence without redefining either. Do not add an abstraction, option, Seam, fallback, or broad error handling without demonstrated need.
+- Verify the finding and its proposed remedy separately. Only a finding with a current evidence basis may authorize repair or support a completion claim.
 - Keep one canonical owner for each fact. Replace repeated specifications with links rather than new summaries.
 - Do not infer permission to commit, push, deploy, publish, delete, or contact external systems from permission to review or repair.
 
@@ -50,7 +52,7 @@ For a broad repository inventory, use the bundled read-only collector when avail
 python3 <skill-directory>/scripts/collect_evidence.py --root <repository> --pretty
 ```
 
-Treat its JSON as an inventory seed, not as proof of correctness or canonical ownership. Inspect relevant files and run repository checks before recording a finding.
+Treat its JSON as an inventory and evidence-basis seed, not as proof of correctness or canonical ownership. Its worktree fingerprint identifies observed Git-visible content; it is not an immutable snapshot. Inspect relevant files and run repository checks before recording a finding.
 
 ## Operating modes
 
