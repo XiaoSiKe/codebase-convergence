@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:codebase-convergence:finding:v1",
+  "title": "Codebase convergence finding",
+  "description": "A machine-verifiable record for one admitted repository finding. Structural validity and evidence freshness do not prove that the claim is semantically correct.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "claim",
+    "category",
+    "severity",
+    "confidence",
+    "impact",
+    "evidence",
+    "evidence_basis",
+    "freshness",
+    "canonical_owner",
+    "disposition"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^F-[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "claim": {
+      "type": "string",
+      "minLength": 1
+    },
+    "category": {
+      "enum": [
+        "bug",
+        "contradiction",
+        "duplication",
+        "stale-or-dead",
+        "completeness-gap",
+        "architecture-candidate"
+      ]
+    },
+    "severity": {
+      "enum": ["critical", "high", "medium", "low"]
+    },
+    "confidence": {
+      "enum": ["confirmed", "probable", "uncertain"]
+    },
+    "impact": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/evidence"
+      }
+    },
+    "evidence_basis": {
+      "$ref": "#/$defs/evidenceBasis"
+    },
+    "freshness": {
+      "enum": ["current", "stale", "unknown"]
+    },
+    "canonical_owner": {
+      "$ref": "#/$defs/canonicalOwner"
+    },
+    "disposition": {
+      "enum": [
+        "direct-repair",
+        "decision-required",
+        "architecture-candidate",
+        "observation"
+      ]
+    }
+  },
+  "$defs": {
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "summary"],
+      "properties": {
+        "kind": {
+          "enum": ["file", "test", "command", "reproduction"]
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "start_line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "end_line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "dependentRequired": {
+        "start_line": ["path", "end_line"],
+        "end_line": ["path", "start_line"]
+      }
+    },
+    "evidenceBasis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "files"],
+      "properties": {
+        "method": {
+          "const": "sha256-file-content-v1"
+        },
+        "worktree_fingerprint": {
+          "type": ["string", "null"],
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "files": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/fileBasis"
+          }
+        }
+      }
+    },
+    "fileBasis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "role", "state", "sha256"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "enum": [
+            "subject",
+            "caller",
+            "test",
+            "canonical-owner",
+            "contract",
+            "generated-source"
+          ]
+        },
+        "state": {
+          "enum": ["present", "absent"]
+        },
+        "sha256": {
+          "type": ["string", "null"],
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "canonicalOwner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "enum": ["confirmed", "disputed", "unknown"]
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

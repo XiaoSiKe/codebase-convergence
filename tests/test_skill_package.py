@@ -44,7 +44,20 @@ class SkillPackageTests(unittest.TestCase):
     def test_skill_identity_matches_package_directory(self) -> None:
         metadata = frontmatter(SKILL_FILE)
         self.assertEqual(metadata.get("name"), SKILL_ROOT.name)
-        self.assertIn("contradictions", metadata.get("description", "").lower())
+        description = metadata.get("description", "").lower()
+        self.assertIn("contradictory", description)
+        self.assertIn("fix bugs", description)
+        self.assertIn("review code", description)
+        self.assertIn("during active maintenance", description)
+
+    def test_dual_core_is_built_in_instead_of_optional_routing(self) -> None:
+        skill = SKILL_FILE.read_text(encoding="utf-8")
+        routing = (SKILL_ROOT / "references" / "specialist-routing.md").read_text(encoding="utf-8")
+
+        self.assertIn("## Two inseparable core disciplines", skill)
+        self.assertIn("Precise execution", skill)
+        self.assertIn("Deep-Module convergence", skill)
+        self.assertNotRegex(routing, r"\| Coding or refactoring risks.*karpathy-guidelines")
 
     def test_every_local_markdown_link_exists_and_stays_in_project(self) -> None:
         for source in PROJECT_ROOT.rglob("*.md"):

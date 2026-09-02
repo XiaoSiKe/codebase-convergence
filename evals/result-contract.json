@@ -14,7 +14,7 @@
     "routes": {
       "type": "array[string]",
       "allowed_items": ["core", "diagnose", "tdd", "zoom-out", "improve-codebase-architecture", "impeccable", "skill-creator", "karpathy-guidelines"],
-      "meaning": "List core when no external specialist was invoked; otherwise list only the technical names of specialists actually invoked, not reference document paths."
+      "meaning": "List core when no external specialist was invoked; otherwise list only specialists actually invoked. Precise execution and the architecture lens do not require default routing, but an explicitly invoked source Skill must still be recorded."
     },
     "changed_files": {
       "type": "array[string]",
@@ -22,7 +22,7 @@
     },
     "verification": {
       "type": "array[string]",
-      "allowed_items": ["baseline", "worktree", "focused-tests", "broader-tests", "static-analysis", "build", "diff", "generator", "idempotence", "markdown", "locked-content", "canonical-owner", "architecture-report", "ui", "reproduction-attempt", "verification-gap", "coverage-manifest", "residual-risk", "finding-admission", "evidence-freshness", "remedy-validation", "alignment-map"],
+      "allowed_items": ["baseline", "worktree", "focused-tests", "broader-tests", "static-analysis", "build", "diff", "generator", "idempotence", "markdown", "locked-content", "canonical-owner", "architecture-report", "ui", "reproduction-attempt", "verification-gap", "coverage-manifest", "residual-risk", "finding-admission", "evidence-freshness", "remedy-validation", "alignment-map", "interface-tests", "locality-check"],
       "meaning": "Stable tags for checks actually performed; detailed command output may be returned in an additional evidence field."
     },
     "paused": {

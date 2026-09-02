@@ -1,6 +1,6 @@
 # Documentation convergence
 
-Read this reference when documents, configuration, schemas, public contracts, or code-to-doc consistency are in scope.
+Read this reference when documents, configuration, schemas, public contracts, or code-to-doc consistency are in scope. Documentation convergence serves knowledge Locality: maintain each fact at one canonical owner and make dependants link to it rather than relearn it.
 
 ## Assign one responsibility per document
 
