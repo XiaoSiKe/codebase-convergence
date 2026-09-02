@@ -23,11 +23,11 @@ def run_cli(*args: str) -> subprocess.CompletedProcess[str]:
 
 
 class EvalCasesTests(unittest.TestCase):
-    def test_case_catalog_is_valid_and_has_ten_unique_cases(self) -> None:
+    def test_case_catalog_is_valid_and_has_seventeen_unique_cases(self) -> None:
         result = run_cli("validate-cases")
         self.assertEqual(0, result.returncode, result.stderr)
         payload = json.loads(result.stdout)
-        self.assertEqual(10, payload["case_count"])
+        self.assertEqual(17, payload["case_count"])
 
     def test_result_contract_exposes_types_without_case_answers(self) -> None:
         result = run_cli("result-contract")
@@ -35,6 +35,19 @@ class EvalCasesTests(unittest.TestCase):
         payload = json.loads(result.stdout)
         self.assertEqual(["none", "decision-required", "architecture-exploration"], payload["fields"]["gate"]["allowed"])
         self.assertEqual(["none", "performed"], payload["fields"]["mutation"]["allowed"])
+        self.assertTrue(
+            {
+                "finding-admission",
+                "evidence-freshness",
+                "remedy-validation",
+                "alignment-map",
+                "interface-tests",
+                "locality-check",
+            }.issubset(
+                payload["fields"]["verification"]["allowed_items"]
+            )
+        )
+        self.assertIn("karpathy-guidelines", payload["fields"]["routes"]["allowed_items"])
         self.assertNotIn("numeric-conflict", result.stdout)
 
     def test_materialize_does_not_expose_expected_result(self) -> None:
@@ -122,3 +135,30 @@ class EvalCasesTests(unittest.TestCase):
             self.assertNotEqual(0, result.returncode)
             self.assertIn("list of strings", result.stdout)
             self.assertNotIn("Traceback", result.stderr)
+
+    def test_cross_caller_case_requires_every_root_cause_change(self) -> None:
+        cases = json.loads((PROJECT_ROOT / "evals" / "cases.json").read_text(encoding="utf-8"))
+        case = next(item for item in cases if item["id"] == "bug-root-cause-across-callers")
+        expected = case["expected"]
+        incomplete = {
+            "gate": expected["gate"],
+            "mutation": expected["mutation"],
+            "routes": expected["routes"],
+            "changed_files": ["src/checkout.py"],
+            "verification": expected["required_verification"],
+            "paused": expected["paused"],
+            "claims_full_correctness": expected["claims_full_correctness"],
+        }
+        with tempfile.TemporaryDirectory() as temp_dir:
+            result_path = Path(temp_dir) / "incomplete.json"
+            result_path.write_text(json.dumps(incomplete), encoding="utf-8")
+            result = run_cli(
+                "validate-result",
+                "--case",
+                "bug-root-cause-across-callers",
+                "--result",
+                str(result_path),
+            )
+
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("missing required paths", result.stdout)

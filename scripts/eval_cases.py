@@ -22,6 +22,7 @@ EXPECTED_KEYS = {
     "required_verification",
     "routes",
 }
+OPTIONAL_EXPECTED_KEYS = {"required_changed_paths"}
 RESULT_KEYS = {
     "changed_files",
     "claims_full_correctness",
@@ -83,8 +84,15 @@ def validate_cases(cases: list[dict[str, Any]], contract: dict[str, Any]) -> lis
                 if not isinstance(content, str):
                     errors.append(f"{label}: fixture content for {raw_path} must be a string")
         expected = case.get("expected")
-        if not isinstance(expected, dict) or set(expected) != EXPECTED_KEYS:
-            errors.append(f"{label}: expected keys must be {sorted(EXPECTED_KEYS)}")
+        if (
+            not isinstance(expected, dict)
+            or not EXPECTED_KEYS.issubset(expected)
+            or set(expected) - EXPECTED_KEYS - OPTIONAL_EXPECTED_KEYS
+        ):
+            errors.append(
+                f"{label}: expected keys must include {sorted(EXPECTED_KEYS)} and may include "
+                f"{sorted(OPTIONAL_EXPECTED_KEYS)}"
+            )
         else:
             if expected["gate"] not in allowed_gates:
                 errors.append(f"{label}: unsupported gate {expected['gate']!r}")
@@ -96,6 +104,19 @@ def validate_cases(cases: list[dict[str, Any]], contract: dict[str, Any]) -> lis
                 errors.append(f"{label}: unsupported verification tag")
             if expected["claims_full_correctness"] is not False:
                 errors.append(f"{label}: claims_full_correctness must be false")
+            required_changed = expected.get("required_changed_paths", [])
+            if not isinstance(required_changed, list) or not all(
+                isinstance(item, str) for item in required_changed
+            ):
+                errors.append(f"{label}: required_changed_paths must be a list of strings")
+            else:
+                for raw_path in required_changed:
+                    try:
+                        safe_relative_path(raw_path)
+                    except ValueError as error:
+                        errors.append(f"{label}: {error}")
+                if not set(required_changed).issubset(expected["allowed_changed_paths"]):
+                    errors.append(f"{label}: required_changed_paths must be allowed")
         git = case.get("git", {})
         if not isinstance(git, dict):
             errors.append(f"{label}: git must be an object")
@@ -204,6 +225,9 @@ def validate_result(case: dict[str, Any], result: dict[str, Any]) -> list[str]:
     unexpected_changes = changed - allowed
     if unexpected_changes:
         errors.append(f"changed_files contains forbidden paths: {sorted(unexpected_changes)}")
+    missing_required_changes = set(expected.get("required_changed_paths", [])) - changed
+    if missing_required_changes:
+        errors.append(f"changed_files is missing required paths: {sorted(missing_required_changes)}")
     if expected["mutation"] == "none" and changed:
         errors.append("mutation is forbidden but changed_files is not empty")
     if result["mutation"] == "performed" and not changed:

@@ -1,6 +1,6 @@
 # Documentation convergence
 
-Read this reference when documents, configuration, schemas, public contracts, or code-to-doc consistency are in scope.
+Read this reference when documents, configuration, schemas, public contracts, or code-to-doc consistency are in scope. Documentation convergence serves knowledge Locality: maintain each fact at one canonical owner and make dependants link to it rather than relearn it.
 
 ## Assign one responsibility per document
 
@@ -28,6 +28,16 @@ For every disputed fact, identify its canonical owner and all dependants. Check 
 - setup command or environment variable ↔ package scripts ↔ CI and runbooks.
 
 Never assume implementation is authoritative solely because it runs. A contradiction may expose an implementation bug, a stale test, or an obsolete document.
+
+For each relevant relationship, classify the alignment state:
+
+- `aligned`: the sources express the same contract;
+- `contradiction`: two sources require incompatible values or behavior;
+- `required-but-missing`: an established authoritative requirement has no implementation;
+- `public-behavior-undocumented`: public or contractual behavior exists but its expected specification owner does not cover it;
+- `ambiguous`: the meaning or canonical owner cannot be established from current evidence.
+
+Every non-aligned record names both source locations, user impact, candidate canonical owner, and disposition. Do not treat every internal implementation detail as a documentation gap, and do not promote executable behavior to canonical truth merely because it runs.
 
 ## Converge prose safely
 

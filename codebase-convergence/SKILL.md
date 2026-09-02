@@ -1,75 +1,86 @@
 ---
 name: codebase-convergence
-description: Audit and safely converge code, architecture, tests, configuration, and Markdown documentation when a repository has bugs, contradictions, duplication, stale guidance, unclear ownership, or accumulating technical debt. Use for evidence-backed review and targeted repair; do not use for ordinary feature development or an unrequested redesign.
+description: Frequently fix bugs, review code, and safely simplify or converge a scoped area or whole repository when code, tests, configuration, schemas, migrations, generated artifacts, or documentation may be incorrect, contradictory, duplicated, stale, or hard to maintain. Use during active maintenance, after changes, or before release; do not use for ordinary feature creation or speculative redesign.
 ---
 
 # Codebase Convergence
 
-Make a repository internally consistent and easier to change. Judge four qualities with evidence: correctness, consistency, completeness, and cleanliness. Never claim that a repository is fully correct; state what was verified and what remains uncertain.
+Improve a repository's correctness, internal consistency, simplicity, and ease of change. Use the Skill repeatedly for focused bug repair, code review, active cleanup, or broader project convergence. Scale coverage to the request; a local bug does not authorize an unrelated whole-repository rewrite.
+
+## Two inseparable core disciplines
+
+Apply both disciplines on every run. They are built into this Skill, not optional specialist routes.
+
+1. **Precise execution**: surface assumptions, prefer the simplest complete solution, change only evidence-backed scope, remove only resulting or explicitly requested residue, and define checks that prove the requested outcome. Minimum means the smallest change that resolves the demonstrated problem, not the fewest edited lines.
+2. **Deep-Module convergence**: inspect in-scope code through Module, Interface, Implementation, Depth, Seam, Adapter, Leverage, and Locality. Concentrate rules, bugs, knowledge, and verification behind a small Interface without moving complexity sideways.
+
+The architecture lens is always active, but it does not manufacture refactors. Use the detailed architecture tests only on in-scope evidence and propose or implement deepening only when real caller, change, ownership, or test friction supports it.
 
 ## Non-negotiable constraints
 
 - Read repository instructions, the domain glossary, relevant ADRs, and authoritative specifications before judging implementation.
-- Preserve unrelated worktree changes. Touch only files that trace to the request and remove only orphans created by this work.
-- Treat user-designated text, titles, data definitions, and other protected content as locked and preserve it verbatim.
-- Do not silently change a number, business rule, state transition, public interface, interaction behavior, visual contract, or canonical owner. Put unresolved choices in one decision packet.
-- Prefer the smallest contract-preserving repair: restore the behavior already established by the Interface and authoritative evidence without redefining either. Do not add an abstraction, option, Seam, fallback, or broad error handling without demonstrated need.
-- Keep one canonical owner for each fact. Replace repeated specifications with links rather than new summaries.
+- For a bug, first build the fastest reliable feedback loop that reproduces or otherwise proves the reported failure. If the exact symptom cannot be established, report the verification gap instead of fixing a nearby guess.
+- Preserve unrelated worktree changes. Every changed line must trace to the request and a current Finding; do not stage, revert, format, or clean unrelated work.
+- Treat scanner, reviewer, and specialist output as candidates until their locations, claims, impact, and evidence basis are grounded in the current repository state.
+- Do not silently change a number, business rule, state transition, public Interface, interaction behavior, visual contract, canonical owner, or accepted ADR. Put unresolved choices in one decision packet.
+- Prefer the simplest complete, contract-preserving repair. Do not add an option, fallback, abstraction, Seam, or error handling for an unobserved scenario.
+- Verify the Finding and its remedy separately. A current Finding only makes a remedy eligible for review; it does not prove the remedy or grant authorization.
+- Keep one canonical owner for each fact. Replace repeated specifications with stable links or callers rather than a second source of truth.
 - Do not infer permission to commit, push, deploy, publish, delete, or contact external systems from permission to review or repair.
 
 ## Start contract
 
 Before multi-step work, state:
 
-1. requested scope and excluded areas;
-2. assumptions and protected content;
-3. whether the user requested audit-only, direct repair, or both;
-4. coverage strategy and success checks that can actually be run.
+1. requested scope and excluded or protected areas;
+2. assumptions and whether the request is audit-only, repair, simplification, or architecture exploration;
+3. coverage proportional to the request;
+4. observable success checks that can actually be run.
 
-If the request is clear, proceed after stating the contract. Ask only when a missing answer would change the result materially or authorize a risky action.
+If the request is clear, proceed. Ask only when a missing answer changes the result materially or authorizes risky work.
 
-Use this compact shape when helpful:
+## Scope and authorization are separate
 
-```text
-Scope:
-Excluded / protected:
-Mode:
-Verification:
-```
+- **Focused bug repair**: reproduce the symptom, trace the affected Module, callers, tests, contracts, and canonical owner, then check the same root cause across that relevant surface.
+- **Scoped review or convergence**: inspect and repair only the named area and its proven dependencies.
+- **Whole-project review or convergence**: only when explicitly requested, inventory the repository breadth-first, then trace changed, central, and high-risk paths deeply. Report uninspected surfaces.
+- **Audit only**: report admitted Findings and architecture candidates without repository mutation.
+- **Safe convergence**: apply direct repairs, including the contract-preserving internal-deepening subtype, when requested and supported by evidence.
+- **Architecture exploration**: report before changing an Interface, Seam, ownership, behavior, or ADR unless the user already authorized that exact refactor.
 
-## Load only the guidance needed
+## Load only the detail needed
 
 - Always read [Execution workflow](references/execution-workflow.md).
-- Read [Documentation convergence](references/documentation-convergence.md) when Markdown, configuration, schemas, contracts, or code-to-doc consistency are in scope.
-- Read [Architecture deepening](references/architecture-deepening.md) only when architectural friction is requested, a local fix is blocked by ownership, or evidence supports a deeper module.
-- Read [Specialist routing](references/specialist-routing.md) only when a specialist Skill could materially improve a finding. Do not load specialists by default.
+- Always apply the compact architecture lens above. Read [Architecture deepening](references/architecture-deepening.md) when code is in scope; scale its candidate reporting to the evidence.
+- Read [Documentation convergence](references/documentation-convergence.md) when Markdown, configuration, schemas, generated artifacts, contracts, or code-to-doc consistency are in scope.
+- Read [Specialist routing](references/specialist-routing.md) only when another Skill can materially improve an in-scope Finding.
 
-For a broad repository inventory, use the bundled read-only collector when available:
+For a broad inventory, use the bundled read-only collector when available:
 
 ```bash
 python3 <skill-directory>/scripts/collect_evidence.py --root <repository> --pretty
 ```
 
-Treat its JSON as an inventory seed, not as proof of correctness or canonical ownership. Inspect relevant files and run repository checks before recording a finding.
+For a non-trivial, externally supplied, cross-file, or cross-turn Finding, use the machine-readable [Finding contract](references/finding-contract.md) and bundled validator without writing artifacts into the target repository:
 
-## Operating modes
+```bash
+python3 <skill-directory>/scripts/finding_contract.py stamp --root <repository> --finding <draft.json>
+python3 <skill-directory>/scripts/finding_contract.py check --root <repository> --finding <stamped.json>
+```
 
-- **Audit only**: inspect and report; do not edit, commit, or perform external writes.
-- **Safe convergence**: apply direct repairs when the user asked to fix or converge. Finish independent safe work before sending a decision packet; after asking, pause for the user's answer.
-- **Architecture exploration**: report candidates before changing an Interface, Seam, ownership, or behavior, unless the user already authorized the exact refactor.
-
-When the user's wording is ambiguous, default to audit only for external or destructive actions and to the smallest reversible local action for repository work.
+The whole-worktree fingerprint records the observed scene. Per-Finding file fingerprints determine whether declared evidence is still current. Neither proves semantic correctness, complete coverage, canonical ownership, architectural quality, or permission to repair.
 
 ## Result contract
 
-Return one concise, evidence-backed handoff containing:
+Return one evidence-backed handoff containing:
 
-- scope and coverage manifest, including inspected and uninspected surfaces;
-- baseline, including pre-existing failures or unrelated changes;
-- findings by ID, severity, confidence, evidence, impact, canonical owner, and disposition;
-- direct repairs mapped to finding IDs;
-- the single decision packet, if any;
+- requested scope and a coverage manifest, including uninspected surfaces;
+- baseline, reproduction or verification gap, and unrelated pre-existing state;
+- Findings by stable ID, severity, confidence, evidence, impact, freshness, canonical owner, and disposition;
+- repairs mapped to Finding IDs, including why each remedy is the simplest complete change;
+- Interface, Depth, Leverage, Locality, and test-surface effects for architecture work;
+- one consolidated decision packet, if needed;
 - verification commands with before and after outcomes;
-- unresolved risks and unverified surfaces.
+- residual risks without claiming full correctness.
 
-Do not dump raw specialist output or imply certainty beyond the checks performed.
+Do not dump raw tool or specialist output. Say what was verified and what remains uncertain.
