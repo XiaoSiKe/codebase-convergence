@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import copy
+import importlib.util
 import json
 import subprocess
 import sys
@@ -10,6 +12,15 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = PROJECT_ROOT / "scripts" / "eval_cases.py"
+
+
+def load_module():
+    spec = importlib.util.spec_from_file_location("eval_cases", SCRIPT)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("cannot load eval_cases")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def run_cli(*args: str) -> subprocess.CompletedProcess[str]:
@@ -23,6 +34,22 @@ def run_cli(*args: str) -> subprocess.CompletedProcess[str]:
 
 
 class EvalCasesTests(unittest.TestCase):
+    def test_case_validation_rejects_unsafe_allowed_paths_and_invalid_dirty_files(self) -> None:
+        module = load_module()
+        cases = module.load_cases()
+        contract = module.load_contract()
+
+        unsafe = copy.deepcopy(cases[0])
+        unsafe["expected"]["allowed_changed_paths"] = ["../outside.py"]
+        unsafe_errors = module.validate_cases([unsafe], contract)
+
+        invalid_dirty = copy.deepcopy(cases[0])
+        invalid_dirty["git"] = {"dirty_files": []}
+        dirty_errors = module.validate_cases([invalid_dirty], contract)
+
+        self.assertTrue(any("unsafe fixture path" in error for error in unsafe_errors))
+        self.assertTrue(any("dirty_files must be an object" in error for error in dirty_errors))
+
     def test_case_catalog_is_valid_and_has_seventeen_unique_cases(self) -> None:
         result = run_cli("validate-cases")
         self.assertEqual(0, result.returncode, result.stderr)

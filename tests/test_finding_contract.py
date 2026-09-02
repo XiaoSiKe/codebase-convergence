@@ -70,6 +70,25 @@ def check(root: Path, finding: dict[str, object]) -> subprocess.CompletedProcess
 
 
 class FindingContractTests(unittest.TestCase):
+    def test_stamp_rejects_boolean_schema_version_and_pathless_file_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "src").mkdir()
+            (root / "src" / "auth.py").write_text("VALUE = 1\n", encoding="utf-8")
+
+            boolean_version = finding_draft()
+            boolean_version["schema_version"] = True
+            pathless_file = finding_draft()
+            pathless_file["evidence"] = [{"kind": "file", "summary": "Location omitted."}]
+
+            boolean_result = stamp(root, boolean_version)
+            pathless_result = stamp(root, pathless_file)
+
+            self.assertEqual(2, boolean_result.returncode)
+            self.assertIn("schema_version must be the integer 1", boolean_result.stdout)
+            self.assertEqual(2, pathless_result.returncode)
+            self.assertIn("file evidence requires path", pathless_result.stdout)
+
     def test_stamp_creates_valid_current_finding_eligible_for_remedy_review(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

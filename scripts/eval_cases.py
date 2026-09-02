@@ -49,10 +49,37 @@ def load_contract() -> dict[str, Any]:
 
 
 def safe_relative_path(raw: str) -> PurePosixPath:
+    if not isinstance(raw, str) or not raw or "\\" in raw:
+        raise ValueError(f"unsafe fixture path: {raw!r}")
     path = PurePosixPath(raw)
-    if path.is_absolute() or not path.parts or ".." in path.parts or "." in path.parts:
+    if (
+        path.is_absolute()
+        or not path.parts
+        or ".." in path.parts
+        or "." in path.parts
+        or path.as_posix() != raw
+    ):
         raise ValueError(f"unsafe fixture path: {raw}")
     return path
+
+
+def string_list(value: Any, label: str, errors: list[str]) -> list[str] | None:
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        errors.append(f"{label} must be a list of strings")
+        return None
+    return value
+
+
+def path_list(value: Any, label: str, errors: list[str]) -> list[str] | None:
+    paths = string_list(value, label, errors)
+    if paths is None:
+        return None
+    for raw_path in paths:
+        try:
+            safe_relative_path(raw_path)
+        except ValueError as error:
+            errors.append(f"{label}: {error}")
+    return paths
 
 
 def validate_cases(cases: list[dict[str, Any]], contract: dict[str, Any]) -> list[str]:
@@ -63,6 +90,9 @@ def validate_cases(cases: list[dict[str, Any]], contract: dict[str, Any]) -> lis
     allowed_routes = set(contract["fields"]["routes"]["allowed_items"])
     allowed_verification = set(contract["fields"]["verification"]["allowed_items"])
     for index, case in enumerate(cases):
+        if not isinstance(case, dict):
+            errors.append(f"case {index}: must be an object")
+            continue
         label = case.get("id", f"index-{index}")
         if not isinstance(label, str) or not label:
             errors.append(f"case {index}: missing id")
@@ -94,40 +124,48 @@ def validate_cases(cases: list[dict[str, Any]], contract: dict[str, Any]) -> lis
                 f"{sorted(OPTIONAL_EXPECTED_KEYS)}"
             )
         else:
-            if expected["gate"] not in allowed_gates:
+            if not isinstance(expected["gate"], str) or expected["gate"] not in allowed_gates:
                 errors.append(f"{label}: unsupported gate {expected['gate']!r}")
-            if expected["mutation"] not in allowed_mutations:
+            if not isinstance(expected["mutation"], str) or expected["mutation"] not in allowed_mutations:
                 errors.append(f"{label}: unsupported mutation {expected['mutation']!r}")
-            if not set(expected["routes"]).issubset(allowed_routes):
+            routes = string_list(expected["routes"], f"{label}: routes", errors)
+            if routes is not None and not set(routes).issubset(allowed_routes):
                 errors.append(f"{label}: unsupported route in {expected['routes']!r}")
-            if not set(expected["required_verification"]).issubset(allowed_verification):
+            required_verification = string_list(
+                expected["required_verification"], f"{label}: required_verification", errors
+            )
+            if required_verification is not None and not set(required_verification).issubset(allowed_verification):
                 errors.append(f"{label}: unsupported verification tag")
             if expected["claims_full_correctness"] is not False:
                 errors.append(f"{label}: claims_full_correctness must be false")
-            required_changed = expected.get("required_changed_paths", [])
-            if not isinstance(required_changed, list) or not all(
-                isinstance(item, str) for item in required_changed
-            ):
-                errors.append(f"{label}: required_changed_paths must be a list of strings")
-            else:
-                for raw_path in required_changed:
-                    try:
-                        safe_relative_path(raw_path)
-                    except ValueError as error:
-                        errors.append(f"{label}: {error}")
-                if not set(required_changed).issubset(expected["allowed_changed_paths"]):
+            if not isinstance(expected["paused"], bool):
+                errors.append(f"{label}: paused must be a boolean")
+            allowed_changed = path_list(
+                expected["allowed_changed_paths"], f"{label}: allowed_changed_paths", errors
+            )
+            required_changed = path_list(
+                expected.get("required_changed_paths", []), f"{label}: required_changed_paths", errors
+            )
+            if required_changed is not None:
+                if allowed_changed is not None and not set(required_changed).issubset(allowed_changed):
                     errors.append(f"{label}: required_changed_paths must be allowed")
         git = case.get("git", {})
         if not isinstance(git, dict):
             errors.append(f"{label}: git must be an object")
         else:
-            for raw_path, content in git.get("dirty_files", {}).items():
-                try:
-                    safe_relative_path(raw_path)
-                except ValueError as error:
-                    errors.append(f"{label}: {error}")
-                if not isinstance(content, str):
-                    errors.append(f"{label}: dirty content for {raw_path} must be a string")
+            if "initial_commit" in git and not isinstance(git["initial_commit"], bool):
+                errors.append(f"{label}: initial_commit must be a boolean")
+            dirty_files = git.get("dirty_files", {})
+            if not isinstance(dirty_files, dict):
+                errors.append(f"{label}: dirty_files must be an object")
+            else:
+                for raw_path, content in dirty_files.items():
+                    try:
+                        safe_relative_path(raw_path)
+                    except ValueError as error:
+                        errors.append(f"{label}: {error}")
+                    if not isinstance(content, str):
+                        errors.append(f"{label}: dirty content for {raw_path} must be a string")
     return errors
 
 
