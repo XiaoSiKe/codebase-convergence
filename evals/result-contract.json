@@ -1,0 +1,37 @@
+{
+  "description": "Machine-readable outcome contract for an independent convergence eval. This defines field meanings, not the expected answer for any case.",
+  "fields": {
+    "gate": {
+      "type": "string",
+      "allowed": ["none", "decision-required", "architecture-exploration"],
+      "meaning": "Use decision-required only when user input is required; architecture-exploration means candidates were reported without implementation."
+    },
+    "mutation": {
+      "type": "string",
+      "allowed": ["none", "performed"],
+      "meaning": "Whether fixture files were actually changed. Use performed exactly when changed_files is non-empty; authorization without a file change is none."
+    },
+    "routes": {
+      "type": "array[string]",
+      "allowed_items": ["core", "diagnose", "tdd", "zoom-out", "improve-codebase-architecture", "impeccable", "skill-creator", "karpathy-guidelines"],
+      "meaning": "List core when no external specialist was invoked; otherwise list only the technical names of specialists actually invoked, not reference document paths."
+    },
+    "changed_files": {
+      "type": "array[string]",
+      "meaning": "Repository-relative fixture paths actually changed by the run."
+    },
+    "verification": {
+      "type": "array[string]",
+      "allowed_items": ["baseline", "worktree", "focused-tests", "broader-tests", "static-analysis", "build", "diff", "generator", "idempotence", "markdown", "locked-content", "canonical-owner", "architecture-report", "ui", "reproduction-attempt", "verification-gap", "coverage-manifest", "residual-risk"],
+      "meaning": "Stable tags for checks actually performed; detailed command output may be returned in an additional evidence field."
+    },
+    "paused": {
+      "type": "boolean",
+      "meaning": "True only when work must stop for user input. A requested audit or candidate report that is complete is not paused."
+    },
+    "claims_full_correctness": {
+      "type": "boolean",
+      "meaning": "Must remain false because an eval can report only its observed coverage."
+    }
+  }
+}

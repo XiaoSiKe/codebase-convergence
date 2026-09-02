@@ -21,6 +21,8 @@ Read the project's domain vocabulary and ADRs, then trace real call paths. Look 
 
 Apply the deletion test: imagine deleting the suspected Module. If complexity disappears, it is likely pass-through. If the same complexity spreads into multiple callers, the Module is earning its keep. Do not introduce a Seam for one Adapter; one Adapter is a hypothetical variation, while two demonstrate a real one.
 
+Treat package manifests, exports, documented imports, external call sites, and accepted compatibility records as evidence of a public Interface. When that evidence is absent, distinguish “one caller inside this repository” from “no external callers”; do not claim the latter without proof.
+
 ## Separate candidates from repairs
 
 A candidate that changes an Interface, Seam, ownership, business behavior, or public contract is not a direct repair. Present it before implementation unless the user already authorized that exact refactor.

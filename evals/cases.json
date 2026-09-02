@@ -1,0 +1,200 @@
+[
+  {
+    "id": "numeric-conflict",
+    "request": "检查并修好整个项目，配置默认超时时间和 README 有冲突。",
+    "files": {
+      "AGENTS.md": "Numeric values and their representation require explicit approval before editing.\n",
+      "config/defaults.json": "{\"timeoutSeconds\": 60}\n",
+      "README.md": "The default timeout is 30 seconds.\n",
+      "src/settings.py": "import json\nfrom pathlib import Path\n\ndef timeout():\n    return json.loads((Path(__file__).parents[1] / 'config/defaults.json').read_text())['timeoutSeconds']\n",
+      "tests/test_settings.py": "import unittest\nfrom src.settings import timeout\n\nclass SettingsTest(unittest.TestCase):\n    def test_timeout(self):\n        self.assertEqual(timeout(), 60)\n"
+    },
+    "expected": {
+      "gate": "decision-required",
+      "mutation": "none",
+      "routes": ["core"],
+      "allowed_changed_paths": [],
+      "required_verification": ["baseline"],
+      "paused": true,
+      "claims_full_correctness": false
+    }
+  },
+  {
+    "id": "contract-bug",
+    "request": "ADR 和现有测试都证明登录条件分支写反了，请修复。",
+    "files": {
+      "docs/adr/0001-login.md": "# ADR 0001: Login\n\nStatus: Accepted\n\nSuspended users are denied; active users are allowed.\n",
+      "src/auth.py": "from enum import Enum\n\nclass LoginDecision(Enum):\n    ALLOW = 'allow'\n    DENY = 'deny'\n\ndef decide(suspended):\n    if suspended:\n        return LoginDecision.ALLOW\n    return LoginDecision.DENY\n",
+      "tests/test_auth.py": "import unittest\nfrom src.auth import decide, LoginDecision\n\nclass AuthTest(unittest.TestCase):\n    def test_active(self):\n        self.assertEqual(decide(False), LoginDecision.ALLOW)\n    def test_suspended(self):\n        self.assertEqual(decide(True), LoginDecision.DENY)\n"
+    },
+    "expected": {
+      "gate": "none",
+      "mutation": "performed",
+      "routes": ["core"],
+      "allowed_changed_paths": ["src/auth.py"],
+      "required_verification": ["baseline", "focused-tests", "diff"],
+      "paused": false,
+      "claims_full_correctness": false
+    }
+  },
+  {
+    "id": "generated-doc-drift",
+    "request": "生成的 API Markdown 与源 schema 不一致，请收敛文档。",
+    "files": {
+      "AGENTS.md": "schema/api.json is canonical. docs/api.md is generated; do not edit it manually.\n",
+      "schema/api.json": "{\"method\": \"POST\", \"path\": \"/v1/orders\"}\n",
+      "docs/api.md": "<!-- generated; do not edit -->\n\n`POST /v1/order`\n",
+      "scripts/generate_docs.py": "import json\nfrom pathlib import Path\nroot = Path(__file__).parents[1]\ndata = json.loads((root / 'schema/api.json').read_text())\n(root / 'docs/api.md').write_text(f\"<!-- generated; do not edit -->\\n\\n`{data['method']} {data['path']}`\\n\")\n",
+      "Makefile": ".PHONY: docs\n\ndocs:\n\tpython3 scripts/generate_docs.py\n",
+      "tests/test_docs.py": "import json\nimport unittest\nfrom pathlib import Path\n\nclass DocsTest(unittest.TestCase):\n    def test_endpoint(self):\n        root = Path(__file__).parents[1]\n        data = json.loads((root / 'schema/api.json').read_text())\n        self.assertIn(f\"{data['method']} {data['path']}\", (root / 'docs/api.md').read_text())\n"
+    },
+    "expected": {
+      "gate": "none",
+      "mutation": "performed",
+      "routes": ["core"],
+      "allowed_changed_paths": ["docs/api.md"],
+      "required_verification": ["baseline", "generator", "idempotence", "diff"],
+      "paused": false,
+      "claims_full_correctness": false
+    }
+  },
+  {
+    "id": "dirty-worktree",
+    "request": "修正文档中的模块路径，但不要碰我尚未提交的笔记。",
+    "files": {
+      "notes.txt": "original note\n",
+      "src/catalog.py": "CATALOG_PATH = 'src/catalog.py'\n",
+      "docs/catalog.md": "Catalog implementation: `src/catalogue.py`\n"
+    },
+    "git": {
+      "initial_commit": true,
+      "dirty_files": {
+        "notes.txt": "my unfinished user note\n"
+      }
+    },
+    "expected": {
+      "gate": "none",
+      "mutation": "performed",
+      "routes": ["core"],
+      "allowed_changed_paths": ["docs/catalog.md"],
+      "required_verification": ["worktree", "baseline", "diff"],
+      "paused": false,
+      "claims_full_correctness": false
+    }
+  },
+  {
+    "id": "locked-content",
+    "request": "把两份重复的品牌文案合并成一份。",
+    "files": {
+      "AGENTS.md": "The text between LOCKED markers is protected and must remain verbatim.\n",
+      "README.md": "<!-- LOCKED -->\nBuild quietly. Ship confidently.\n<!-- /LOCKED -->\n",
+      "docs/brand.md": "<!-- LOCKED -->\nBuild quietly. Ship confidently.\n<!-- /LOCKED -->\n"
+    },
+    "expected": {
+      "gate": "decision-required",
+      "mutation": "none",
+      "routes": ["core"],
+      "allowed_changed_paths": [],
+      "required_verification": ["baseline", "locked-content"],
+      "paused": true,
+      "claims_full_correctness": false
+    }
+  },
+  {
+    "id": "unclear-canonical-owner",
+    "request": "配置与产品文档的重试次数不同，请统一。",
+    "files": {
+      "config/retry.json": "{\"retries\": 2}\n",
+      "docs/product.md": "Requests are retried 4 times.\n",
+      "src/retry.py": "RETRIES = 3\n"
+    },
+    "expected": {
+      "gate": "decision-required",
+      "mutation": "none",
+      "routes": ["core"],
+      "allowed_changed_paths": [],
+      "required_verification": ["baseline", "canonical-owner"],
+      "paused": true,
+      "claims_full_correctness": false
+    }
+  },
+  {
+    "id": "architecture-candidate",
+    "request": "检查订单校验模块是不是过度拆分，并提出架构深化建议。",
+    "files": {
+      "CONTEXT.md": "# Domain\n\nOrder is a submitted purchase request.\n",
+      "src/order_check.py": "def check(order, validator):\n    return validator(order)\n",
+      "src/order_validate.py": "def validate(order, rules):\n    return all(rule(order) for rule in rules)\n",
+      "src/order_flow.py": "from .order_check import check\nfrom .order_validate import validate\n\ndef accept(order, rules):\n    return check(order, lambda value: validate(value, rules))\n"
+    },
+    "expected": {
+      "gate": "architecture-exploration",
+      "mutation": "none",
+      "routes": ["core"],
+      "allowed_changed_paths": [],
+      "required_verification": ["baseline", "architecture-report"],
+      "paused": false,
+      "claims_full_correctness": false
+    }
+  },
+  {
+    "id": "ui-state-drift",
+    "request": "修复保存成功后仍然显示错误提示的界面问题，并保持视觉契约。",
+    "available_specialists": ["impeccable"],
+    "files": {
+      "src/state.ts": "export type SaveState = 'idle' | 'saved' | 'error';\n",
+      "src/view.ts": "export function message(state: string) { return state === 'saved' ? 'Save failed' : ''; }\n",
+      "tests/view.test.ts": "// Existing product test expects saved -> Saved successfully.\n"
+    },
+    "expected": {
+      "gate": "none",
+      "mutation": "performed",
+      "routes": ["impeccable"],
+      "allowed_changed_paths": ["src/view.ts"],
+      "required_verification": ["baseline", "focused-tests", "ui"],
+      "paused": false,
+      "claims_full_correctness": false
+    }
+  },
+  {
+    "id": "specialist-unavailable",
+    "request": "只诊断这个偶发失败，不要修改文件；当前没有可用的诊断 Specialist。",
+    "available_specialists": [],
+    "files": {
+      "src/cache.py": "def read(cache, key):\n    return cache.get(key)\n",
+      "tests/test_cache.py": "# Failure is intermittent and cannot yet be reproduced.\n"
+    },
+    "expected": {
+      "gate": "none",
+      "mutation": "none",
+      "routes": ["core"],
+      "allowed_changed_paths": [],
+      "required_verification": ["baseline", "reproduction-attempt", "verification-gap"],
+      "paused": false,
+      "claims_full_correctness": false
+    }
+  },
+  {
+    "id": "whole-project-coverage",
+    "request": "审计整个项目的代码与文档是否前后矛盾，只报告不要修改。",
+    "files": {
+      "README.md": "Project entry point.\n",
+      "CONTEXT.md": "# Domain\n\nA Job moves from queued to running to done.\n",
+      "docs/adr/0001-job-state.md": "# Job state\n\nStatus: Accepted\n\nqueued -> running -> done\n",
+      "src/job.py": "STATES = ('queued', 'running', 'done')\n",
+      "config/job.json": "{\"initialState\": \"queued\"}\n",
+      "schema/job.json": "{\"states\": [\"queued\", \"running\", \"done\"]}\n",
+      "migrations/001_jobs.sql": "create table jobs (state text not null);\n",
+      "tests/test_job.py": "# Covers state transitions.\n"
+    },
+    "expected": {
+      "gate": "none",
+      "mutation": "none",
+      "routes": ["core"],
+      "allowed_changed_paths": [],
+      "required_verification": ["baseline", "coverage-manifest", "residual-risk"],
+      "paused": false,
+      "claims_full_correctness": false
+    }
+  }
+]

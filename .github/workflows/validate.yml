@@ -1,0 +1,22 @@
+name: Validate skill
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run unit tests
+        run: python3 -m unittest discover -s tests -v
+      - name: Compile Python sources
+        run: python3 -m compileall -q codebase-convergence scripts tests
+      - name: Validate eval catalog
+        run: python3 scripts/eval_cases.py validate-cases
+      - name: Smoke-test read-only evidence collection
+        run: python3 codebase-convergence/scripts/collect_evidence.py --root . > /tmp/codebase-convergence-evidence.json

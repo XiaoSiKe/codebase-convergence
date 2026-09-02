@@ -44,6 +44,14 @@ Verification:
 - Read [Architecture deepening](references/architecture-deepening.md) only when architectural friction is requested, a local fix is blocked by ownership, or evidence supports a deeper module.
 - Read [Specialist routing](references/specialist-routing.md) only when a specialist Skill could materially improve a finding. Do not load specialists by default.
 
+For a broad repository inventory, use the bundled read-only collector when available:
+
+```bash
+python3 <skill-directory>/scripts/collect_evidence.py --root <repository> --pretty
+```
+
+Treat its JSON as an inventory seed, not as proof of correctness or canonical ownership. Inspect relevant files and run repository checks before recording a finding.
+
 ## Operating modes
 
 - **Audit only**: inspect and report; do not edit, commit, or perform external writes.

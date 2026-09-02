@@ -13,6 +13,8 @@ Use this workflow for every convergence task. Scale the depth to the repository 
 
 Do not install new tools or create a broad test framework solely to perform the review.
 
+The bundled `scripts/collect_evidence.py` may seed a broad inventory. It reads repository metadata and file headers, skips symlinks and common generated dependency directories, and writes JSON only to standard output. Its generated-file markers and command discovery are leads to verify, not findings by themselves.
+
 ## 2. Build one evidence ledger
 
 Give each finding a stable ID. Record:
