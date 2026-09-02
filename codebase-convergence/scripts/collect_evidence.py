@@ -28,6 +28,7 @@ SKIPPED_DIRECTORIES = {
 }
 INSTRUCTION_NAMES = {"AGENTS.md", "CLAUDE.md"}
 CONFIG_NAMES = {
+    ".gitignore",
     "Makefile",
     "package.json",
     "openai.yaml",
@@ -128,6 +129,15 @@ def looks_like_schema(path: Path) -> bool:
         or name in {"schema.json", "schema.yaml", "schema.yml"}
         or name.endswith((".schema.json", ".schema.yaml", ".schema.yml"))
     )
+
+
+def looks_like_config(path: Path) -> bool:
+    parts = tuple(part.lower() for part in path.parts)
+    in_github_workflows = any(
+        parts[index : index + 2] == (".github", "workflows")
+        for index in range(len(parts) - 1)
+    )
+    return path.name in CONFIG_NAMES or has_part(path, "config", "configs") or in_github_workflows
 
 
 def generated_file(path: Path) -> bool:
@@ -266,7 +276,7 @@ def collect_evidence(root: Path) -> dict[str, Any]:
         "config_files": sorted(
             value
             for path, value in rel.items()
-            if path.name in CONFIG_NAMES or has_part(path.relative_to(root), "config", "configs")
+            if looks_like_config(path.relative_to(root))
         ),
         "schema_files": sorted(
             value for path, value in rel.items() if looks_like_schema(path.relative_to(root))

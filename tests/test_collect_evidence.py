@@ -61,6 +61,8 @@ class CollectEvidenceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             files = {
+                ".github/workflows/validate.yml": "name: Validate\n",
+                ".gitignore": "__pycache__/\n",
                 "AGENTS.md": "docs/generated.md is generated; do not edit it manually.\n",
                 "agents/openai.yaml": "interface:\n  display_name: Example\n",
                 "CONTEXT.md": "# Domain\n",
@@ -95,6 +97,8 @@ class CollectEvidenceTests(unittest.TestCase):
             self.assertIn("schema/api.json", evidence["inventory"]["schema_files"])
             self.assertIn("references/finding.schema.json", evidence["inventory"]["schema_files"])
             self.assertIn("agents/openai.yaml", evidence["inventory"]["config_files"])
+            self.assertIn(".github/workflows/validate.yml", evidence["inventory"]["config_files"])
+            self.assertIn(".gitignore", evidence["inventory"]["config_files"])
             self.assertIn("migrations/001.sql", evidence["inventory"]["migration_files"])
             self.assertIn("tests/test_app.py", evidence["inventory"]["test_files"])
             self.assertIn("npm run test", evidence["available_commands"])

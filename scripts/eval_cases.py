@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -32,6 +33,16 @@ RESULT_KEYS = {
     "routes",
     "verification",
 }
+IGNORED_WORKSPACE_DIRECTORIES = {
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+    "node_modules",
+}
+IGNORED_WORKSPACE_NAMES = {".coverage", ".DS_Store"}
 
 
 def load_cases() -> list[dict[str, Any]]:
@@ -228,7 +239,66 @@ def materialize(case: dict[str, Any], output: Path) -> dict[str, Any]:
     }
 
 
-def validate_result(case: dict[str, Any], result: dict[str, Any]) -> list[str]:
+def validate_workspace(raw_workspace: Path) -> Path:
+    expanded = raw_workspace.expanduser()
+    if expanded.is_symlink():
+        raise ValueError(f"workspace must not be a symlink: {expanded}")
+    workspace = expanded.resolve()
+    forbidden = {Path("/").resolve(), Path.home().resolve(), PROJECT_ROOT.resolve()}
+    if workspace in forbidden or not workspace.is_dir():
+        raise ValueError(f"workspace must be a materialized eval directory: {workspace}")
+    return workspace
+
+
+def observed_workspace_paths(workspace: Path) -> set[str]:
+    def raise_walk_error(error: OSError) -> None:
+        raise error
+
+    observed: set[str] = set()
+    for current, directories, filenames in os.walk(
+        workspace,
+        topdown=True,
+        onerror=raise_walk_error,
+        followlinks=False,
+    ):
+        current_path = Path(current)
+        retained_directories: list[str] = []
+        for name in directories:
+            path = current_path / name
+            if name in IGNORED_WORKSPACE_DIRECTORIES:
+                continue
+            if path.is_symlink():
+                observed.add(path.relative_to(workspace).as_posix())
+            else:
+                retained_directories.append(name)
+        directories[:] = retained_directories
+        for name in filenames:
+            if name in IGNORED_WORKSPACE_NAMES or name.endswith(".pyc"):
+                continue
+            observed.add((current_path / name).relative_to(workspace).as_posix())
+    return observed
+
+
+def workspace_changed_paths(case: dict[str, Any], workspace: Path) -> list[str]:
+    workspace = validate_workspace(workspace)
+    baseline = dict(case["files"])
+    baseline.update(case.get("git", {}).get("dirty_files", {}))
+    observed = observed_workspace_paths(workspace)
+    changed = observed - set(baseline)
+
+    for raw_path, content in baseline.items():
+        relative = safe_relative_path(raw_path)
+        path = workspace.joinpath(*relative.parts)
+        if path.is_symlink() or not path.is_file() or path.read_bytes() != content.encode("utf-8"):
+            changed.add(raw_path)
+    return sorted(changed)
+
+
+def validate_result(
+    case: dict[str, Any],
+    result: dict[str, Any],
+    actual_changed_paths: list[str],
+) -> list[str]:
     errors: list[str] = []
     if not isinstance(result, dict):
         return ["result must be a JSON object"]
@@ -258,7 +328,14 @@ def validate_result(case: dict[str, Any], result: dict[str, Any]) -> list[str]:
     if unsupported_routes:
         errors.append(f"unsupported routes: {sorted(unsupported_routes)}")
 
-    changed = set(result["changed_files"])
+    reported_changed = set(result["changed_files"])
+    changed = set(actual_changed_paths)
+    unreported = changed - reported_changed
+    if unreported:
+        errors.append(f"changed_files has unreported workspace changes: {sorted(unreported)}")
+    unobserved = reported_changed - changed
+    if unobserved:
+        errors.append(f"changed_files reports paths unchanged in workspace: {sorted(unobserved)}")
     allowed = set(expected["allowed_changed_paths"])
     unexpected_changes = changed - allowed
     if unexpected_changes:
@@ -301,6 +378,7 @@ def main() -> int:
     result_parser = subparsers.add_parser("validate-result")
     result_parser.add_argument("--case", required=True)
     result_parser.add_argument("--result", type=Path, required=True)
+    result_parser.add_argument("--workspace", type=Path, required=True)
     args = parser.parse_args()
 
     try:
@@ -325,7 +403,8 @@ def main() -> int:
             return 0
 
         result = json.loads(args.result.read_text(encoding="utf-8"))
-        errors = validate_result(case, result)
+        actual_changed_paths = workspace_changed_paths(case, args.workspace)
+        errors = validate_result(case, result, actual_changed_paths)
         print_json({"ok": not errors, "errors": errors})
         return 1 if errors else 0
     except (OSError, ValueError, json.JSONDecodeError, subprocess.CalledProcessError) as error:

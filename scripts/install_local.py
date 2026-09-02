@@ -38,7 +38,10 @@ def source_files() -> dict[str, str]:
 
 
 def validate_target(raw_target: Path) -> Path:
-    target = raw_target.expanduser().resolve()
+    expanded = raw_target.expanduser()
+    if expanded.is_symlink():
+        raise ValueError(f"target directory must not be a symlink: {expanded}")
+    target = expanded.resolve()
     forbidden = {Path("/").resolve(), Path.home().resolve(), PROJECT_ROOT.resolve(), SOURCE.resolve()}
     if target in forbidden or target.name != SKILL_NAME:
         raise ValueError(f"target must be an explicit directory named {SKILL_NAME}: {target}")

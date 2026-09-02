@@ -179,6 +179,7 @@ def validate_finding(finding: dict[str, Any]) -> list[str]:
                     errors.append(f"{label} line ranges require path")
 
     basis_paths: set[str] = set()
+    basis_entries: dict[str, dict[str, Any]] = {}
     basis = finding.get("evidence_basis")
     if not isinstance(basis, dict):
         errors.append("evidence_basis must be an object")
@@ -205,6 +206,7 @@ def validate_finding(finding: dict[str, Any]) -> list[str]:
                     if normalized in basis_paths:
                         errors.append(f"duplicate evidence basis path: {normalized}")
                     basis_paths.add(normalized)
+                    basis_entries.setdefault(normalized, item)
                 except ValueError as error:
                     errors.append(f"{label}.path: {error}")
                 enum_value(item.get("role"), FILE_ROLES, f"{label}.role", errors)
@@ -232,6 +234,10 @@ def validate_finding(finding: dict[str, Any]) -> list[str]:
                 owner_path = normalized_relative_path(owner.get("path"))
                 if owner_path not in basis_paths:
                     errors.append("confirmed canonical_owner.path must be present in evidence_basis.files")
+                elif basis_entries[owner_path].get("state") != "present":
+                    errors.append("confirmed canonical owner must be present")
+                elif basis_entries[owner_path].get("role") != "canonical-owner":
+                    errors.append("confirmed canonical owner must use the canonical-owner evidence role")
             except ValueError as error:
                 errors.append(f"canonical_owner.path: {error}")
         elif status in {"disputed", "unknown"}:
@@ -315,7 +321,8 @@ def stamp_finding(root: Path, finding: dict[str, Any]) -> dict[str, Any]:
     stamped["evidence_basis"] = stamped_basis
     stamped["freshness"] = "current"
     errors = validate_finding(stamped)
-    errors.extend(validate_line_ranges(root, stamped))
+    if not errors:
+        errors.extend(validate_line_ranges(root, stamped))
     if errors:
         raise ValueError(f"invalid Finding draft: {'; '.join(errors)}")
     return stamped

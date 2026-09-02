@@ -89,6 +89,28 @@ class FindingContractTests(unittest.TestCase):
             self.assertEqual(2, pathless_result.returncode)
             self.assertIn("file evidence requires path", pathless_result.stdout)
 
+    def test_stamp_reports_structural_line_errors_without_tracebacks(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "src").mkdir()
+            (root / "src" / "auth.py").write_text("VALUE = 1\n", encoding="utf-8")
+            (root / "src" / "other.py").write_text("VALUE = 2\n", encoding="utf-8")
+
+            invalid_line = finding_draft()
+            invalid_line["evidence"][0]["end_line"] = "bad"
+            unbacked_path = finding_draft()
+            unbacked_path["evidence"][0]["path"] = "src/other.py"
+
+            invalid_line_result = stamp(root, invalid_line)
+            unbacked_path_result = stamp(root, unbacked_path)
+
+            self.assertEqual(2, invalid_line_result.returncode)
+            self.assertIn("end_line must be a positive integer", invalid_line_result.stdout)
+            self.assertNotIn("Traceback", invalid_line_result.stderr)
+            self.assertEqual(2, unbacked_path_result.returncode)
+            self.assertIn("missing from evidence_basis", unbacked_path_result.stdout)
+            self.assertNotIn("Traceback", unbacked_path_result.stderr)
+
     def test_stamp_creates_valid_current_finding_eligible_for_remedy_review(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
@@ -199,6 +221,32 @@ class FindingContractTests(unittest.TestCase):
             self.assertEqual(2, result.returncode)
             self.assertIn("confirmed confidence", result.stdout)
             self.assertIn("confirmed canonical owner", result.stdout)
+
+    def test_direct_repair_requires_a_present_canonical_owner(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            draft = finding_draft("docs/missing-owner.md", "canonical-owner")
+            draft["category"] = "completeness-gap"
+            draft["evidence"] = [
+                {"kind": "command", "summary": "The intended canonical owner is absent."}
+            ]
+
+            result = stamp(root, draft)
+
+            self.assertEqual(2, result.returncode)
+            self.assertIn("confirmed canonical owner must be present", result.stdout)
+
+    def test_confirmed_canonical_owner_requires_matching_evidence_role(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "src").mkdir()
+            (root / "src" / "auth.py").write_text("VALUE = 1\n", encoding="utf-8")
+            draft = finding_draft("src/auth.py", "subject")
+
+            result = stamp(root, draft)
+
+            self.assertEqual(2, result.returncode)
+            self.assertIn("canonical-owner evidence role", result.stdout)
 
     def test_out_of_range_line_evidence_is_unknown_after_repository_change(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

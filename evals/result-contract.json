@@ -18,7 +18,7 @@
     },
     "changed_files": {
       "type": "array[string]",
-      "meaning": "Repository-relative fixture paths actually changed by the run."
+      "meaning": "Repository-relative fixture paths whose final file state differs from the materialized workspace baseline. The scorer verifies this list against --workspace."
     },
     "verification": {
       "type": "array[string]",
