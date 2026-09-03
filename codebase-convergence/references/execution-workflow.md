@@ -4,10 +4,12 @@ Use this workflow for every convergence task. Keep the Interface stable—scope,
 
 ## 1. Turn the request into observable success
 
-1. State scope, exclusions, protected content, assumptions, authorization, and checks that would demonstrate success.
-2. Choose proportionate coverage. A focused Bug repair traces the affected Module and relevant callers; a scoped review stays within named code and proven dependencies; a whole-project request inventories every major surface before deep tracing.
+1. State scope, exclusions, protected content, assumptions, authorization, and checks that would demonstrate success. Identify whether the request is audit-only, repair, simplification, or architecture exploration. Audit-only work reports findings without repository mutation; architecture exploration reports candidates before changing an Interface, Seam, ownership, behavior, or ADR unless that exact refactor is authorized.
+2. Choose proportionate coverage. A focused Bug repair traces the affected Module, callers, tests, and contracts for the same root cause; a scoped review stays within named code and proven dependencies; an explicitly requested whole-project review inventories every major surface before deep tracing.
 3. For a reported Bug, build the fastest reliable feedback loop at the Interface where the symptom occurs: a failing test, reproducible command, request, browser flow, trace replay, or other deterministic check. Confirm it matches the user's failure, not a nearby one.
 4. If no reliable reproduction or decisive evidence is available, record the attempted checks and verification gap. Do not compensate with speculative fallbacks.
+
+When the request is clear, proceed. Ask only when a missing answer materially changes the result or authorization.
 
 ## 2. Establish the repository baseline
 
@@ -88,6 +90,23 @@ Repeat relevant baseline checks and classify outcomes as before, after, unchange
 
 Any repair changes its Finding's evidence basis. Re-adjudicate affected Findings against the combined final state; do not label stale evidence as fixed. For architecture work, compare the before/after Interface, surviving tests, and whether Depth, Leverage, or Locality actually improved.
 
+Once the requested acceptance checks, relevant regressions, and required repository gates pass, move to delivery. Add another check only to investigate a concrete failing signal or unresolved risk.
+
 ## 8. Hand off with calibrated certainty
 
-Report scope and coverage, baseline, admitted Findings, repairs, decisions, verification, and residual risks. Explain why each remedy was the simplest complete change and, when architecture changed, where complexity and knowledge became more local. Say “verified by …” rather than “guaranteed.”
+Build titles, comments, commit messages, PR text, and handoffs from the accepted final state, task-owned diff, and checks that actually ran. Remove rejected session-only framing, including paraphrases or explanations of why an irrelevant option is absent. Preserve necessary facts about real removals, compatibility, failures, diagnostics, and audit history. Preserve unrelated user changes and distinguish them from task-owned work.
+
+Inspect the complete delivery surface, including filenames and metadata, for stale framing, unsupported claims, and lost required facts. Read back artifacts created or changed by an external tool and inspect affected surfaces again when their content changes. Report partial failures or unreadable results accurately.
+
+Return one evidence-backed handoff containing:
+
+- requested scope and coverage, including uninspected surfaces;
+- baseline, reproduction or verification gap, and unrelated pre-existing state;
+- Findings by stable ID, severity, confidence, evidence, impact, freshness, canonical owner, and disposition;
+- repairs mapped to Findings and why each remedy was the simplest complete change;
+- Interface, Depth, Leverage, Locality, and test-surface effects for architecture work;
+- one consolidated decision packet, when needed;
+- verification commands with before and after outcomes;
+- residual risks without claiming full correctness.
+
+Scale the handoff to the work: a focused repair can summarize this evidence briefly. Say what was verified and what remains uncertain without dumping raw tool or specialist output.
