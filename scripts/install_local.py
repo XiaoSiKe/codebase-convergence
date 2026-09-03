@@ -76,9 +76,12 @@ def safe_target_path(target: Path, relative: str) -> Path:
 
 
 def inspect_target(target: Path, current_source: dict[str, str]) -> dict[str, Any]:
-    if not target.exists():
+    exists = target.exists()
+    if exists and not target.is_dir():
+        raise ValueError(f"target is not a directory: {target}")
+    if not exists or not any(target.iterdir()):
         return {
-            "status": "missing",
+            "status": "empty" if exists else "missing",
             "installable": True,
             "add": sorted(current_source),
             "update": [],
@@ -86,9 +89,6 @@ def inspect_target(target: Path, current_source: dict[str, str]) -> dict[str, An
             "local_changes": [],
             "conflicts": [],
         }
-    if not target.is_dir():
-        raise ValueError(f"target is not a directory: {target}")
-
     manifest = load_manifest(target)
     if manifest is None:
         return {

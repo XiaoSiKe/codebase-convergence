@@ -1,41 +1,93 @@
-# 代码整理修复大师
+<h1 align="center">🛠️ 代码整理修复大师 · Codebase Convergence</h1>
 
-这是 Codex Skill `codebase-convergence` 的规范源仓库。它可在日常开发中频繁用于修复 Bug、审核代码、整理简化和收敛局部或整个项目，不限于任务的最后阶段。
+<p align="center">
+  <strong>修复真实问题，让代码、文档和验证回到一致、简洁、可维护的状态。</strong>
+</p>
 
-Skill 以两项不可分割的原则为核心：
+<p align="center">
+  <sub>精准修复 · 代码审核 · 架构收敛 · 文档一致 · 可执行验证</sub>
+</p>
 
-- 精准执行：显式假设、最简单的完整方案、可追溯的最小改动和可执行验证；
-- 深 Module 收敛：用 Interface、Implementation、Depth、Seam、Adapter、Leverage 和 Locality 判断复杂度应收回哪里。
+<p align="center">
+  <a href="#capabilities">🎯 核心能力</a> ·
+  <a href="#quick-start">🚀 快速开始</a> ·
+  <a href="#workflow">🧭 工作流程</a> ·
+  <a href="#verification">🧪 基本验证</a> ·
+  <a href="#structure">📁 项目结构</a> ·
+  <a href="#sources">🤝 来源</a>
+</p>
 
-Finding、证据指纹、规范来源、文档收敛和专业路由是支撑机制，不取代这两个核心。
+<p align="center">
+  <img src="https://img.shields.io/badge/Codex-Agent_Skill-8B5CF6?style=flat-square" alt="Codex Agent Skill">
+  <img src="https://img.shields.io/badge/Python-3.9%2B-3776AB?style=flat-square&amp;logo=python&amp;logoColor=white" alt="Python 3.9 or newer">
+  <a href="https://github.com/XiaoSiKe/codebase-convergence/actions/workflows/validate.yml"><img src="https://img.shields.io/github/actions/workflow/status/XiaoSiKe/codebase-convergence/validate.yml?branch=main&amp;style=flat-square&amp;label=Tests" alt="Validate skill CI"></a>
+</p>
 
-用户可见名称是“代码整理修复大师”；技术标识继续使用 `codebase-convergence`，以兼容 Codex 的 Skill 命名与 `$codebase-convergence` 调用方式。
+---
 
-## 常用调用
+<a id="capabilities"></a>
+
+## 🎯 围绕真实问题收敛项目
+
+`codebase-convergence` 是一个可在日常开发中反复调用的 Codex Skill。它用于修复 Bug、审核代码、整理重复与矛盾，以及收敛局部或整个项目。
+
+| 核心 | 关注的问题 | 产生的结果 |
+| --- | --- | --- |
+| 🎯 **精准执行** | 该不该改、改多少、如何证明 | 有证据、可追溯、可验证的最小完整修复 |
+| 🧩 **深 Module 收敛** | 复杂度、规则和失败处理应该由谁承担 | 更小的 Interface、更高的 Leverage 和更集中的 Locality |
+
+Finding、证据指纹、规范来源和专业路由为这两项核心提供支撑。实际修复仍以当前仓库的规则、代码和可执行检查为准。
+
+<a id="quick-start"></a>
+
+## 🚀 快速开始
+
+### 安装到 Codex
+
+```bash
+git clone https://github.com/XiaoSiKe/codebase-convergence.git
+cd codebase-convergence
+
+python3 scripts/install_local.py --dry-run --target ~/.codex/skills/codebase-convergence
+python3 scripts/install_local.py --install --target ~/.codex/skills/codebase-convergence
+python3 scripts/install_local.py --check --target ~/.codex/skills/codebase-convergence
+```
+
+安装器支持缺失或空的目标目录，也能更新没有本地改动的托管安装。预览空目录时，JSON 结果使用 `status: "empty"`；未托管的非空目录、本地已改动文件和符号链接会被保留并报告。
+
+### 发起一次收敛
 
 ```text
 使用 $codebase-convergence 修复这个 Bug，复现后检查相同根因在相关 Module、调用方和测试中是否还存在。
+```
+
+```text
 使用 $codebase-convergence 只读审核这个范围，报告 Bug、矛盾、重复知识、浅 Module 和未覆盖风险。
+```
+
+```text
 使用 $codebase-convergence 整理并收敛整个项目，只实施有证据、已授权且经验证的最小完整修复。
 ```
 
-## 仓库结构
+<a id="workflow"></a>
 
-```text
-codebase-convergence/
-├── SKILL.md                  # 精简的协调接口与不可违反的约束
-├── agents/openai.yaml       # 中文展示名与默认调用提示
-├── references/              # 工作流、架构、文档、路由与 Finding 合同
-└── scripts/                 # 只读证据采集与 Finding 指纹校验
-CONTEXT.md                   # 本仓库自己的领域术语和维护不变量
-evals/cases.json             # 不向被测代理泄露答案的行为评测目录
-scripts/                     # 评测夹具和安全安装工具
-tests/                       # 无第三方依赖的包、工具和安全行为测试
+## 🧭 工作流程
+
+```mermaid
+flowchart TD
+    A["明确范围"] --> B["建立基线"]
+    B --> C["准入 Finding"]
+    C --> D["判断修复"]
+    D --> E["最小完整改动"]
+    E --> F["验证与复核"]
+    F --> G["根据最终状态交付"]
 ```
 
-Skill 的行为规范以 [`codebase-convergence/SKILL.md`](codebase-convergence/SKILL.md) 为准；本文件只负责仓库入口，不复制工作流规则。
+工作流先确认问题和规范来源，再实施最简单的完整修复。当请求的验收、相关回归和必要检查已通过时即进入交付；只有具体失败或未解决风险才扩大验证。
 
-## 本地验证
+<a id="verification"></a>
+
+## 🧪 基本验证
 
 ```bash
 python3 -m unittest discover -s tests -v
@@ -44,40 +96,65 @@ python3 scripts/eval_cases.py validate-cases
 python3 scripts/eval_cases.py result-contract
 ```
 
-第一条命令覆盖包结构、只读证据采集、评测夹具和安装保护；第二条使用 Codex `skill-creator` 自带校验器检查 Skill 包格式；第三条验证行为评测目录的结构与安全不变量；第四条输出不含案例答案的机器结果契约。
+单元测试覆盖技能包、只读证据工具、安装保护和评测基础设施。评测目录校验只检查案例结构与安全不变量，不执行独立编码代理。
 
-## 确定性工具
+<details>
+<summary><strong>确定性工具</strong></summary>
 
-只读采集仓库证据：
-
-```bash
-python3 codebase-convergence/scripts/collect_evidence.py --root /明确的/仓库路径 --pretty
-```
-
-采集器输出 schema v2。除原有清单外，`git` 对象还包含 `head`、`branch`、`dirty`、`worktree_fingerprint` 和 `fingerprint_method`。指纹由当前提交、已跟踪文件差异与未被忽略的未跟踪文件内容生成，用于标识 Finding 的证据基线；它不是不可变快照，也不证明仓库正确。被忽略的文件、跳过的符号链接、子模块内部状态、采集根目录外的生成物和外部运行时状态不在其覆盖范围内。
-
-为一条 Finding 生成相关文件指纹，验证结构并重新判断证据新鲜度：
+### 收集仓库证据
 
 ```bash
-python3 codebase-convergence/scripts/finding_contract.py stamp --root /repository --finding /tmp/finding-draft.json > /tmp/finding.json
-python3 codebase-convergence/scripts/finding_contract.py check --root /repository --finding /tmp/finding.json
+python3 codebase-convergence/scripts/collect_evidence.py --root /path/to/repository --pretty
 ```
 
-Finding 合同是结构和新鲜度闸门，不机器判定业务正确性、规范来源、Depth、Locality 或修复授权。它无法发现未被声明为相关文件的新调用方，因此高风险修复前仍需重新搜索调用和契约。
+输出包含清单、Git 基线和工作树指纹。它用于标识观察对象，不机器判定正确性。
 
-物化一个不含期望答案的临时评测仓库：
+### 记录并检查 Finding
 
 ```bash
-python3 scripts/eval_cases.py materialize --case numeric-conflict --output /明确的/空目录
-python3 scripts/eval_cases.py validate-result --case numeric-conflict --result /tmp/result.json --workspace /明确的/空目录
+python3 codebase-convergence/scripts/finding_contract.py stamp --root /path/to/repository --finding /tmp/finding-draft.json
+python3 codebase-convergence/scripts/finding_contract.py check --root /path/to/repository --finding /tmp/finding.json
 ```
 
-`validate-result` 会把结果中的 `changed_files` 与物化工作区相对初始夹具的真实净变化对账；未上报、虚报、越界或缺少的改动都会使评测失败。`.git` 和常见测试缓存不计入夹具改动，案例预置的未提交文件则以物化完成时的内容为基线。
+Finding 合同校验结构、安全路径和证据新鲜度。完整字段与限制见 [Finding 指南](codebase-convergence/references/finding-contract.md)。
 
-检查或预览本地安装时必须提供完整目标目录。`--check` 和 `--dry-run` 不写文件；`--install` 只接受空目标或由本工具管理且没有本地修改的目标。目标目录本身、受管文件或安装清单是符号链接时都会拒绝继续：
+### 物化评测夹具
 
 ```bash
-python3 scripts/install_local.py --check --target /明确的/codebase-convergence
-python3 scripts/install_local.py --dry-run --target /明确的/codebase-convergence
-python3 scripts/install_local.py --install --target /明确的/codebase-convergence
+python3 scripts/eval_cases.py materialize --case numeric-conflict --output /path/to/empty-directory
+python3 scripts/eval_cases.py validate-result --case numeric-conflict --result /tmp/result.json --workspace /path/to/empty-directory
 ```
+
+`validate-result` 会把上报的 `changed_files` 与夹具的真实净变化对账。
+
+</details>
+
+<a id="structure"></a>
+
+## 📁 项目结构
+
+```text
+codebase-convergence/
+├── SKILL.md                  # 精简的核心原则与导航
+├── agents/openai.yaml       # 中文展示名与默认调用提示
+├── references/              # 工作流、架构、文档、路由、Finding 与来源
+└── scripts/                 # 只读证据采集与 Finding 指纹校验
+CONTEXT.md                   # 本仓库的领域术语和维护不变量
+evals/                       # 不向被测代理泄露答案的行为评测
+scripts/                     # 评测夹具与安全安装工具
+tests/                       # 无第三方依赖的确定性测试
+```
+
+Skill 的行为规范以 [`codebase-convergence/SKILL.md`](codebase-convergence/SKILL.md) 为入口，详细执行步骤由 [Execution workflow](codebase-convergence/references/execution-workflow.md) 维护。
+
+<a id="sources"></a>
+
+## 🤝 来源与致谢
+
+README 的居中标题、导航和徽章排版参考了 [Project Evolution Engine](https://github.com/XiaoSiKe/project-evolution-engine)。最终交付规则根据 [No Negative Echo](https://github.com/LB623/no-negative-echo) 的核心思路重新组织。
+
+固定提交、改写范围和上游许可见 [来源说明](codebase-convergence/references/sources.md)。
+
+---
+
+<p align="center">🛠️ 修好真问题，收回复杂度，让下一次修改更容易。</p>

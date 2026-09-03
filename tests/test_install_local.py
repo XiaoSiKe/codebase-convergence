@@ -32,6 +32,28 @@ class InstallLocalTests(unittest.TestCase):
             self.assertFalse(target.exists())
             self.assertEqual("missing", json.loads(result.stdout)["status"])
 
+    def test_empty_target_can_be_previewed_and_installed(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            target = Path(temp_dir) / "codebase-convergence"
+            target.mkdir()
+
+            previewed = run_cli("--dry-run", "--target", str(target))
+
+            self.assertEqual(0, previewed.returncode, previewed.stderr)
+            preview = json.loads(previewed.stdout)
+            self.assertEqual("empty", preview["status"])
+            self.assertTrue(preview["installable"])
+            self.assertEqual([], list(target.iterdir()))
+
+            installed = run_cli("--install", "--target", str(target))
+            checked = run_cli("--check", "--target", str(target))
+
+            self.assertEqual(0, installed.returncode, installed.stderr)
+            self.assertEqual(0, checked.returncode, checked.stderr)
+            self.assertEqual("current", json.loads(checked.stdout)["status"])
+            manifest = json.loads((target / ".codebase-convergence-install.json").read_text(encoding="utf-8"))
+            self.assertEqual(sorted(manifest["files"]), preview["add"])
+
     def test_install_then_check_reports_current(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             target = Path(temp_dir) / "codebase-convergence"
@@ -114,6 +136,23 @@ class InstallLocalTests(unittest.TestCase):
 
             self.assertNotEqual(0, result.returncode)
             self.assertEqual("legacy\n", (target / "SKILL.md").read_text(encoding="utf-8"))
+
+    def test_hidden_files_and_subdirectories_are_not_empty_targets(self) -> None:
+        for name in (".keep", "notes"):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as temp_dir:
+                target = Path(temp_dir) / "codebase-convergence"
+                target.mkdir()
+                entry = target / name
+                if name == ".keep":
+                    entry.write_text("keep\n", encoding="utf-8")
+                else:
+                    entry.mkdir()
+
+                result = run_cli("--dry-run", "--target", str(target))
+
+                self.assertEqual(2, result.returncode)
+                self.assertEqual("unmanaged", json.loads(result.stdout)["status"])
+                self.assertEqual([entry], list(target.iterdir()))
 
     def test_managed_update_preserves_unmanaged_extra_files(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
